@@ -8,7 +8,9 @@ import {
   renderStats,
   renderAgentMessage,
   renderMoonStrip,
+  renderModernQuoteCells,
   renderStarFieldLines,
+  selectModernQuote,
   buildFrame,
   buildFrameCells,
   buildContentCells,
@@ -20,6 +22,7 @@ import type {
   Orchestrator,
   OrchestratorState,
 } from "./core/orchestrator.js";
+import { selectTerminalPet } from "./utils/pet.js";
 
 function createIteration(
   overrides: Partial<IterationRecord> = {},
@@ -194,6 +197,24 @@ describe("renderMoonStrip", () => {
   });
 });
 
+describe("modern quote rendering", () => {
+  it("selects a stable quote from a seed", () => {
+    expect(selectModernQuote(0).text).toBe(
+      "Make it work, make it right, make it fast.",
+    );
+    expect(selectModernQuote(0.99).author).toBe("Steve Jobs");
+  });
+
+  it("renders the quote and author as dim cells", () => {
+    const rows = renderModernQuoteCells(selectModernQuote(0));
+    const text = rows.map(rowToString).map(stripAnsi).join("\n");
+
+    expect(text).toContain('"Make it work, make it right, make it fast."');
+    expect(text).toContain("- Kent Beck");
+    expect(rows.flat().every((cell) => cell.style === "dim")).toBe(true);
+  });
+});
+
 describe("renderStarFieldLines", () => {
   it("renders the correct number of rows", () => {
     const lines = renderStarFieldLines(42, 40, 3, Date.now());
@@ -205,6 +226,14 @@ describe("renderStarFieldLines", () => {
       .map(stripAnsi)
       .join("\n");
     expect(/[·✧⋆°]/.test(text)).toBe(true);
+  });
+
+  it("adds an aurora wave behind the star field", () => {
+    const text = renderStarFieldLines(42, 80, 16, 0, 0)
+      .map(stripAnsi)
+      .join("\n");
+
+    expect(/[~=_-]/.test(text)).toBe(true);
   });
 
   it("adds a sparse meteor streak without overwhelming the star field", () => {
@@ -299,7 +328,7 @@ describe("buildFrame", () => {
       )
       .map(stripAnsi);
 
-    expect(lines.slice(8, 11).filter(Boolean)).toEqual(["A".repeat(62), "🌕"]);
+    expect(lines.slice(11, 14).filter(Boolean)).toEqual(["A".repeat(62), "🌕"]);
   });
 
   it("shows the stop and resume hint on the second-to-last row with blank bottom padding", () => {
@@ -665,6 +694,98 @@ describe("buildFrame", () => {
 
     expect(text).not.toContain("╱");
   });
+
+  it("renders a hatching pet in the right margin when there is room", () => {
+    const state: OrchestratorState = {
+      status: "running",
+      gracefulStopRequested: false,
+      interruptHint: "resume",
+      currentIteration: 1,
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      tokensEstimated: false,
+      commitCount: 0,
+      iterations: [],
+      successCount: 0,
+      failCount: 0,
+      consecutiveFailures: 0,
+      consecutiveErrors: 0,
+      startTime: new Date("2026-01-01T00:00:00Z"),
+      waitingUntil: null,
+      lastMessage: null,
+    };
+    const terminalWidth = 100;
+    const cells = buildFrameCells(
+      "ship it",
+      "claude",
+      state,
+      [],
+      [],
+      [],
+      state.startTime.getTime(),
+      terminalWidth,
+      30,
+      [],
+      [],
+      [],
+      selectModernQuote(0),
+      selectTerminalPet(0),
+    );
+    const plainLines = cells.map(rowToString).map(stripAnsi);
+    const centerStart = Math.floor((terminalWidth - 63) / 2);
+    const centerEnd = centerStart + 63;
+
+    expect(plainLines.join("\n")).toContain("/  \\");
+    for (const row of cells) {
+      expect(row).toHaveLength(terminalWidth);
+      const centerText = stripAnsi(
+        rowToString(row.slice(centerStart, centerEnd)),
+      );
+      expect(centerText).not.toContain("/  \\");
+      expect(centerText).not.toContain("\\__/");
+    }
+  });
+
+  it("hides the pet when the right margin is too narrow", () => {
+    const state: OrchestratorState = {
+      status: "running",
+      gracefulStopRequested: false,
+      interruptHint: "resume",
+      currentIteration: 1,
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      tokensEstimated: false,
+      commitCount: 0,
+      iterations: [],
+      successCount: 0,
+      failCount: 0,
+      consecutiveFailures: 0,
+      consecutiveErrors: 0,
+      startTime: new Date("2026-01-01T00:00:00Z"),
+      waitingUntil: null,
+      lastMessage: null,
+    };
+    const cells = buildFrameCells(
+      "ship it",
+      "claude",
+      state,
+      [],
+      [],
+      [],
+      state.startTime.getTime(),
+      76,
+      30,
+      [],
+      [],
+      [],
+      selectModernQuote(0),
+      selectTerminalPet(0),
+    );
+    const text = cells.map(rowToString).map(stripAnsi).join("\n");
+
+    expect(text).not.toContain("/  \\");
+    expect(text).not.toContain("\\__/");
+  });
 });
 
 describe("renderer module exports", () => {
@@ -701,6 +822,7 @@ describe("buildContentCells adaptive height", () => {
     const text = toText(rows);
     expect(text).toContain("┏━╸┏━┓");
     expect(text).toContain("g n h f");
+    expect(text).toContain("Make it work");
     expect(text).toContain("my prompt");
     expect(text).toContain("reading files");
     expect(text).toContain("00:01:00");
@@ -715,10 +837,12 @@ describe("buildContentCells adaptive height", () => {
     const eyebrowIndex = lines.findIndex((line) => line.includes("g n h f"));
     const firstArtIndex = lines.findIndex((line) => line.includes("┏━╸┏━┓"));
     const lastArtIndex = lines.findIndex((line) => line.includes("┗━┛┗━┛"));
+    const quoteIndex = lines.findIndex((line) => line.includes("Make it work"));
     const promptIndex = lines.findIndex((line) => line.includes("my prompt"));
 
     expect(firstArtIndex - eyebrowIndex).toBe(3);
-    expect(promptIndex - lastArtIndex).toBe(2);
+    expect(quoteIndex - lastArtIndex).toBe(2);
+    expect(promptIndex - quoteIndex).toBe(3);
   });
 
   it("hides ASCII art first when height is insufficient", () => {
@@ -733,6 +857,7 @@ describe("buildContentCells adaptive height", () => {
     const text = toText(rows);
     expect(text).not.toContain("┏━╸┏━┓");
     expect(text).toContain("g n h f");
+    expect(text).toContain("Make it work");
     expect(text).toContain("my prompt");
     expect(text).toContain("reading files");
     expect(rows.length).toBeLessThanOrEqual(21);
@@ -750,12 +875,13 @@ describe("buildContentCells adaptive height", () => {
     const text = toText(rows);
     expect(text).not.toContain("┏━╸┏━┓");
     expect(text).not.toContain("g n h f");
+    expect(text).toContain("Make it work");
     expect(text).toContain("my prompt");
     expect(text).toContain("reading files");
     expect(rows.length).toBeLessThanOrEqual(17);
   });
 
-  it("hides agent text after eyebrow", () => {
+  it("hides the quote after eyebrow", () => {
     const rows = buildContentCells(
       "my prompt",
       "claude",
@@ -767,10 +893,30 @@ describe("buildContentCells adaptive height", () => {
     const text = toText(rows);
     expect(text).not.toContain("┏━╸┏━┓");
     expect(text).not.toContain("g n h f");
-    expect(text).not.toContain("reading files");
+    expect(text).not.toContain("Make it work");
+    expect(text).toContain("reading files");
     expect(text).toContain("my prompt");
     expect(text).toContain("00:01:00");
     expect(rows.length).toBeLessThanOrEqual(14);
+  });
+
+  it("hides agent text after the quote", () => {
+    const rows = buildContentCells(
+      "my prompt",
+      "claude",
+      state,
+      "00:01:00",
+      0,
+      12,
+    );
+    const text = toText(rows);
+    expect(text).not.toContain("┏━╸┏━┓");
+    expect(text).not.toContain("g n h f");
+    expect(text).not.toContain("Make it work");
+    expect(text).not.toContain("reading files");
+    expect(text).toContain("my prompt");
+    expect(text).toContain("00:01:00");
+    expect(rows.length).toBeLessThanOrEqual(12);
   });
 
   it("hides prompt text last", () => {
@@ -780,7 +926,7 @@ describe("buildContentCells adaptive height", () => {
       state,
       "00:01:00",
       0,
-      9,
+      8,
     );
     const text = toText(rows);
     expect(text).not.toContain("┏━╸┏━┓");
@@ -788,7 +934,7 @@ describe("buildContentCells adaptive height", () => {
     expect(text).not.toContain("reading files");
     expect(text).not.toContain("my prompt");
     expect(text).toContain("00:01:00");
-    expect(rows.length).toBeLessThanOrEqual(9);
+    expect(rows.length).toBeLessThanOrEqual(8);
   });
 
   it("always keeps stats and moon strip even at minimum height", () => {

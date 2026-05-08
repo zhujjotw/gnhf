@@ -8,6 +8,11 @@ import {
   type Star,
 } from "./utils/stars.js";
 import { getMoonPhase } from "./utils/moon.js";
+import {
+  renderPetFrame,
+  selectTerminalPet,
+  type TerminalPet,
+} from "./utils/pet.js";
 import { formatElapsed } from "./utils/time.js";
 import { formatTokens } from "./utils/tokens.js";
 import { wordWrap } from "./utils/wordwrap.js";
@@ -39,6 +44,42 @@ const RESUME_HINT = "[ctrl+c to stop, gnhf again to resume]";
 const GRACEFUL_STOP_HINT =
   "[graceful stop requested, ctrl+c again to force stop, gnhf again to resume]";
 const DONE_HINT = "[ctrl+c to exit]";
+const MODERN_QUOTES = [
+  {
+    text: "Make it work, make it right, make it fast.",
+    author: "Kent Beck",
+  },
+  {
+    text: "Simplicity is prerequisite for reliability.",
+    author: "Edsger W. Dijkstra",
+  },
+  {
+    text: "The best way to predict the future is to invent it.",
+    author: "Alan Kay",
+  },
+  {
+    text: "Premature optimization is the root of all evil.",
+    author: "Donald Knuth",
+  },
+  {
+    text: "Programs must be written for people to read.",
+    author: "Harold Abelson",
+  },
+  {
+    text: "Stay hungry, stay foolish.",
+    author: "Steve Jobs",
+  },
+  {
+    text: "What you do every day matters more than what you do once.",
+    author: "Gretchen Rubin",
+  },
+  {
+    text: "The journey is the reward.",
+    author: "Steve Jobs",
+  },
+] as const;
+
+export type ModernQuote = (typeof MODERN_QUOTES)[number];
 
 export type RendererExitReason = "interrupted" | "stopped";
 
@@ -229,6 +270,21 @@ export function renderMoonStripCells(
   return rows;
 }
 
+export function selectModernQuote(seed = Math.random()): ModernQuote {
+  const normalized = Number.isFinite(seed) ? Math.abs(seed) % 1 : 0;
+  return MODERN_QUOTES[Math.floor(normalized * MODERN_QUOTES.length)]!;
+}
+
+export function renderModernQuoteCells(quote: ModernQuote): Cell[][] {
+  const quoteText = `"${quote.text}"`;
+  return [
+    ...wordWrap(quoteText, CONTENT_WIDTH, 2).map((line) =>
+      textToCells(line, "dim"),
+    ),
+    textToCells(`- ${quote.author}`, "dim"),
+  ];
+}
+
 // ── String wrappers (preserve existing API) ──────────────────
 
 export function renderTitle(agentName?: string): string[] {
@@ -367,11 +423,44 @@ function renderStarLineCells(
   width: number,
   y: number,
   now: number,
+  absoluteRow = y,
 ): Cell[] {
   const cells = emptyCells(width);
+  placeAuroraInCells(cells, 0, width, absoluteRow, now);
   placeStarsInCells(cells, stars, y, 0, width, 0, now);
   placeMeteorsInCells(cells, meteors, y, 0, width, 0, now);
   return cells;
+}
+
+function placeAuroraInCells(
+  cells: Cell[],
+  xOffset: number,
+  width: number,
+  absoluteRow: number,
+  now: number,
+): void {
+  if (width <= 0) return;
+
+  const drift = now / 1_400;
+  const lowerBand = 10 + Math.sin(drift / 5) * 3;
+  const upperBand = 3 + Math.cos(drift / 6) * 2;
+  const glyphs = ["~", "=", "-", "_"] as const;
+
+  for (let localX = 0; localX < width; localX++) {
+    const x = xOffset + localX;
+    const wave =
+      Math.sin((x + drift * 8) / 12) * 1.8 +
+      Math.sin((x - drift * 5) / 23) * 1.2;
+    const nearLower = Math.abs(absoluteRow - (lowerBand + wave)) < 0.36;
+    const nearUpper = Math.abs(absoluteRow - (upperBand + wave * 0.6)) < 0.22;
+    if (!nearLower && !nearUpper) continue;
+
+    cells[localX] = {
+      char: glyphs[(x + absoluteRow) % glyphs.length]!,
+      style: "dim",
+      width: 1,
+    };
+  }
 }
 
 export function renderStarFieldLines(
@@ -402,9 +491,11 @@ function renderSideStarsCells(
   xOffset: number,
   sideWidth: number,
   now: number,
+  absoluteRow = rowIndex,
 ): Cell[] {
   if (sideWidth <= 0) return [];
   const cells = emptyCells(sideWidth);
+  placeAuroraInCells(cells, xOffset, sideWidth, absoluteRow, now);
   placeStarsInCells(
     cells,
     stars,
@@ -470,6 +561,46 @@ function renderResumeHintCells(
   return centerLineCells(textToCells(hint, "dim"), width);
 }
 
+function overlayPetInFrame(
+  frame: Cell[][],
+  pet: TerminalPet | undefined,
+  elapsedMs: number,
+  terminalWidth: number,
+  availableHeight: number,
+): void {
+  if (!pet || availableHeight <= 0) return;
+
+  const sideWidth = Math.max(
+    0,
+    Math.floor((terminalWidth - CONTENT_WIDTH) / 2),
+  );
+  const rightSideWidth = Math.max(0, terminalWidth - sideWidth - CONTENT_WIDTH);
+  const centerEnd =
+    Math.floor((terminalWidth - CONTENT_WIDTH) / 2) + CONTENT_WIDTH;
+  const petLines = renderPetFrame(pet, elapsedMs);
+  const petWidth = Math.max(...petLines.map((line) => line.length));
+  const petHeight = petLines.length;
+
+  if (sideWidth < petWidth + 2 || availableHeight < petHeight + 4) return;
+
+  const startCol = terminalWidth - petWidth - 1;
+  if (startCol < centerEnd) return;
+
+  const startRow = Math.max(0, availableHeight - petHeight - 1);
+  for (let y = 0; y < petHeight; y++) {
+    const row = frame[startRow + y];
+    if (!row) continue;
+
+    const line = petLines[y]!.padEnd(petWidth, " ");
+    const cells = textToCells(line, "dim");
+    for (let x = 0; x < cells.length; x++) {
+      const col = startCol + x;
+      if (col < centerEnd || col >= terminalWidth) continue;
+      row[col] = cells[x]!;
+    }
+  }
+}
+
 // ── Build full frame (cell-based) ────────────────────────────
 
 /**
@@ -486,6 +617,7 @@ export function buildContentCells(
   elapsed: string,
   now: number,
   availableHeight?: number,
+  quote: ModernQuote = selectModernQuote(0),
 ): Cell[][] {
   const isRunning = state.status === "running" || state.status === "waiting";
   const moonRows = renderMoonStripCells(state.iterations, isRunning, now);
@@ -505,7 +637,8 @@ export function buildContentCells(
     top: [[]] as Cell[][],
     eyebrow: [titleCells[0], [], []] as Cell[][],
     art: titleCells.slice(2),
-    prompt: [titleSpacer, ...promptRows, [], []] as Cell[][],
+    quote: [[], ...renderModernQuoteCells(quote)] as Cell[][],
+    prompt: [titleSpacer, ...promptRows, []] as Cell[][],
     stats: [
       renderStatsCells(
         elapsed,
@@ -517,20 +650,20 @@ export function buildContentCells(
     ] as Cell[][],
     agent: [
       [],
-      [],
       ...renderAgentMessageCells(
         state.lastMessage,
         state.status,
         state.lastAgentError,
       ),
     ],
-    moon: [[], [], ...moonRows] as Cell[][],
+    moon: [[], ...moonRows] as Cell[][],
   };
 
   const flattenSections = (): Cell[][] => [
     ...sections.top,
     ...sections.eyebrow,
     ...sections.art,
+    ...sections.quote,
     ...sections.prompt,
     ...sections.stats,
     ...sections.agent,
@@ -540,6 +673,7 @@ export function buildContentCells(
   const optionalSections: Array<keyof typeof sections> = [
     "art",
     "eyebrow",
+    "quote",
     "agent",
     "prompt",
   ];
@@ -560,6 +694,7 @@ export function buildContentCells(
       ...sections.top,
       ...sections.eyebrow,
       ...sections.art,
+      ...sections.quote,
       ...sections.prompt,
       ...sections.stats,
       ...sections.agent,
@@ -588,8 +723,11 @@ export function buildFrameCells(
   topMeteors: Meteor[] = [],
   bottomMeteors: Meteor[] = [],
   sideMeteors: Meteor[] = [],
+  quote: ModernQuote = selectModernQuote(0),
+  pet?: TerminalPet,
 ): Cell[][] {
-  const elapsed = formatElapsed(now - state.startTime.getTime());
+  const elapsedMs = now - state.startTime.getTime();
+  const elapsed = formatElapsed(elapsedMs);
   const reservedBottomRows = 2;
   const availableHeight = Math.max(0, terminalHeight - reservedBottomRows);
   const contentRows = buildContentCells(
@@ -599,6 +737,7 @@ export function buildFrameCells(
     elapsed,
     now,
     availableHeight,
+    quote,
   );
 
   while (contentRows.length < Math.min(BASE_CONTENT_ROWS, availableHeight)) {
@@ -630,12 +769,20 @@ export function buildFrameCells(
     0,
     Math.floor((terminalWidth - CONTENT_WIDTH) / 2),
   );
+  const rightSideWidth = Math.max(0, terminalWidth - sideWidth - CONTENT_WIDTH);
 
   const frame: Cell[][] = [];
 
   for (let y = 0; y < topHeight; y++) {
     frame.push(
-      renderStarLineCells(topStars, visibleTopMeteors, terminalWidth, y, now),
+      renderStarLineCells(
+        topStars,
+        visibleTopMeteors,
+        terminalWidth,
+        y,
+        now,
+        y,
+      ),
     );
   }
 
@@ -647,15 +794,17 @@ export function buildFrameCells(
       0,
       sideWidth,
       now,
+      topHeight + i,
     );
     const center = centerLineCells(contentRows[i], CONTENT_WIDTH);
     const right = renderSideStarsCells(
       sideStars,
       visibleSideMeteors,
       i,
-      terminalWidth - sideWidth,
-      sideWidth,
+      terminalWidth - rightSideWidth,
+      rightSideWidth,
       now,
+      topHeight + i,
     );
     frame.push([...left, ...center, ...right]);
   }
@@ -668,12 +817,14 @@ export function buildFrameCells(
         terminalWidth,
         y,
         now,
+        topHeight + contentCount + y,
       ),
     );
   }
 
   frame.push(renderResumeHintCells(terminalWidth, state.interruptHint));
   frame.push(emptyCells(terminalWidth));
+  overlayPetInFrame(frame, pet, elapsedMs, terminalWidth, availableHeight);
 
   return frame;
 }
@@ -736,6 +887,8 @@ export class Renderer {
   private cachedWidth = 0;
   private cachedHeight = 0;
   private meteorFrequency: number;
+  private quote: ModernQuote;
+  private pet: TerminalPet;
   private prevCells: Cell[][] = [];
   private prevTitle: string | null = null;
   private titleSaved = false;
@@ -767,6 +920,8 @@ export class Renderer {
       0,
       Math.floor(options.meteorFrequency ?? DEFAULT_METEOR_FREQUENCY),
     );
+    this.quote = selectModernQuote();
+    this.pet = selectTerminalPet();
     this.state = orchestrator.getState();
     this.seedTop = Math.floor(Math.random() * 2147483646) + 1;
     this.seedBottom = Math.floor(Math.random() * 2147483646) + 1;
@@ -901,6 +1056,8 @@ export class Renderer {
       this.topMeteors,
       this.bottomMeteors,
       this.sideMeteors,
+      this.quote,
+      this.pet,
     );
 
     if (this.isFirstFrame || resized) {
