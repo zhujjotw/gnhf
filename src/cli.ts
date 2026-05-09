@@ -61,6 +61,7 @@ import { renderExitSummary } from "./core/exit-summary.js";
 import { MockOrchestrator } from "./mock-orchestrator.js";
 import { Renderer } from "./renderer.js";
 import { slugifyPrompt } from "./utils/slugify.js";
+import { listTasks } from "./commands/list.js";
 
 const packageVersion = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
@@ -601,6 +602,12 @@ program
     3,
   )
   .option("--mock", "", false)
+  .option("--email-to <addr>", "Override email recipient for notifications")
+  .option(
+    "--email-interval <minutes>",
+    "Override email notification interval in minutes (0 = only on completion)",
+    parseNonNegativeInteger,
+  )
   .action(
     async (
       promptArg: string | undefined,
@@ -615,6 +622,8 @@ program
         push: boolean;
         meteorFrequency: number;
         mock: boolean;
+        emailTo?: string;
+        emailInterval?: number;
       },
     ) => {
       if (options.mock) {
@@ -666,6 +675,17 @@ program
         ...(options.preventSleep === undefined
           ? {}
           : { preventSleep: options.preventSleep }),
+        ...(loadedConfig.email
+          ? {
+              email: {
+                ...loadedConfig.email,
+                ...(options.emailTo ? { to: options.emailTo } : {}),
+                ...(options.emailInterval !== undefined
+                  ? { intervalMinutes: options.emailInterval }
+                  : {}),
+              },
+            }
+          : {}),
       };
       if (!isAgentSpec(config.agent)) {
         console.error(
@@ -979,7 +999,32 @@ program
           stopWhen: effectiveStopWhen,
           ...(options.push ? { push: true } : {}),
         },
+        getCurrentBranch(effectiveCwd),
       );
+
+      let emailScheduler: { attach(o: Orchestrator): void; dispose(): void } | null = null;
+      if (config.email?.enabled) {
+        const { EmailScheduler } = await import("./core/email-scheduler.js");
+        const branch = getCurrentBranch(effectiveCwd);
+        const emailStatus = {
+          pid: process.pid,
+          branch,
+          agent: config.agent,
+          status: "running" as const,
+          prompt: prompt.slice(0, 200),
+          startTime: new Date().toISOString(),
+          lastUpdateTime: new Date().toISOString(),
+          currentIteration: startIteration,
+          successCount: 0,
+          failCount: 0,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          commitCount: 0,
+        };
+        emailScheduler = new EmailScheduler(config.email, emailStatus);
+        emailScheduler.attach(orchestrator);
+      }
+
       let shutdownSignal: NodeJS.Signals | null = null;
       let forceShutdownRequested = false;
 
@@ -1178,6 +1223,84 @@ program
       }
     },
   );
+
+program
+  .command("list")
+  .description("List all animo tasks (running and completed)")
+  .option("--all", "Show all tasks (default: last 10)", false)
+  .option("--cwd <path>", "Repository path (default: current directory)")
+  .action((opts: { all: boolean; cwd?: string }) => {
+    listTasks({
+      all: opts.all,
+      cwd: opts.cwd ?? process.cwd(),
+    });
+  });
+
+program
+  .command("notify")
+  .description("Send a one-off status email for the current repository")
+  .option("--to <addr>", "Recipient email address")
+  .option("--cwd <path>", "Repository path (default: current directory)")
+  .action(async (opts: { to?: string; cwd?: string }) => {
+    const { loadConfig: loadCfg } = await import("./core/config.js");
+    const { sendEmail: send } = await import("./core/email.js");
+    const { buildStatusEmailHtml: buildHtml } = await import(
+      "./core/email-template.js"
+    );
+    const { readStatusFile: readStatus, resolveDisplayStatus: resolveStatus } =
+      await import("./core/status.js");
+    const { existsSync: exists, readdirSync: readdir } = await import(
+      "node:fs"
+    );
+    const { join: pathJoin } = await import("node:path");
+
+    const cfg = loadCfg();
+    if (!cfg.email) {
+      console.error(
+        "  Email not configured. Add an 'email' section to ~/.animo/config.yml",
+      );
+      process.exit(1);
+    }
+
+    const cwd = opts.cwd ?? process.cwd();
+    const runsDir = pathJoin(cwd, ".animo", "runs");
+    if (!exists(runsDir)) {
+      console.error("  No .animo/runs/ directory found.");
+      process.exit(1);
+    }
+
+    const dirs = readdir(runsDir, { withFileTypes: true });
+    const entries = dirs
+      .filter((d) => d.isDirectory())
+      .map((d) => readStatus(pathJoin(runsDir, d.name)))
+      .filter((s): s is NonNullable<typeof s> => s !== null);
+
+    if (entries.length === 0) {
+      console.error("  No animo tasks found.");
+      process.exit(1);
+    }
+
+    const latest = entries.sort(
+      (a, b) =>
+        new Date(b.lastUpdateTime).getTime() -
+        new Date(a.lastUpdateTime).getTime(),
+    )[0];
+
+    const to = opts.to ?? cfg.email.to;
+    try {
+      await send(cfg.email, {
+        to,
+        subject: `[animo] status notification - ${entries.length} task(s)`,
+        html: buildHtml({ status: { ...latest, status: resolveStatus(latest) }, iterations: [] }),
+      });
+      console.log(`  Email sent to ${to}`);
+    } catch (err) {
+      console.error(
+        `  Failed to send email: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      process.exit(1);
+    }
+  });
 
 function enterAltScreen() {
   process.stdout.write("\x1b[?1049h");

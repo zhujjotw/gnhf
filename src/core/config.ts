@@ -79,6 +79,19 @@ export interface Config {
   commitMessage?: CommitMessageConfig;
   maxConsecutiveFailures: number;
   preventSleep: boolean;
+  email?: EmailConfig;
+}
+
+export interface EmailConfig {
+  enabled: boolean;
+  smtp: {
+    host: string;
+    port: number;
+    user: string;
+    password: string;
+  };
+  to: string;
+  intervalMinutes: number;
 }
 
 const DEFAULT_CONFIG: Config = {
@@ -361,6 +374,47 @@ function normalizeAcpRegistryOverrides(
   return result;
 }
 
+function normalizeEmailConfig(
+  value: unknown,
+): EmailConfig | undefined {
+  if (value === undefined || value === null || value === false) return undefined;
+  if (typeof value !== "object") return undefined;
+
+  const obj = value as Record<string, unknown>;
+  const enabled = obj.enabled !== false;
+
+  const smtp = obj.smtp;
+  if (typeof smtp !== "object" || smtp === null) return undefined;
+  const smtpObj = smtp as Record<string, unknown>;
+  if (
+    typeof smtpObj.host !== "string" ||
+    typeof smtpObj.user !== "string" ||
+    typeof smtpObj.password !== "string"
+  ) {
+    return undefined;
+  }
+  const port = typeof smtpObj.port === "number" ? smtpObj.port : 587;
+
+  if (typeof obj.to !== "string" || obj.to.length === 0) return undefined;
+
+  const intervalMinutes =
+    typeof obj.intervalMinutes === "number" && obj.intervalMinutes > 0
+      ? obj.intervalMinutes
+      : 10;
+
+  return {
+    enabled,
+    smtp: {
+      host: smtpObj.host,
+      port,
+      user: smtpObj.user,
+      password: smtpObj.password,
+    },
+    to: obj.to,
+    intervalMinutes,
+  };
+}
+
 function normalizeConfig(
   config: Partial<Config>,
   configDir?: string,
@@ -449,6 +503,18 @@ function normalizeConfig(
     }
   } else {
     delete normalized.commitMessage;
+  }
+
+  const hasEmail = Object.prototype.hasOwnProperty.call(config, "email");
+  if (hasEmail) {
+    const email = normalizeEmailConfig(config.email);
+    if (email === undefined) {
+      delete normalized.email;
+    } else {
+      normalized.email = email;
+    }
+  } else {
+    delete normalized.email;
   }
 
   return normalized;

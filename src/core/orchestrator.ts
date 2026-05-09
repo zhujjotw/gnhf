@@ -27,6 +27,11 @@ import {
 } from "./interrupt-state.js";
 import { buildCommitMessage } from "./commit-message.js";
 import { buildIterationPrompt } from "../templates/iteration-prompt.js";
+import {
+  writeStatusFile,
+  clearStatusPid,
+  type StatusData,
+} from "./status.js";
 
 export interface IterationRecord {
   number: number;
@@ -116,6 +121,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
   private cwd: string;
   private prompt: string;
   private limits: RunLimits;
+  private branch: string;
   private stopRequested = false;
   private stopPromise: Promise<void> | null = null;
   private activeIterationPromise: Promise<RunIterationResult> | null = null;
@@ -156,6 +162,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     cwd: string,
     startIteration = 0,
     limits: RunLimits = {},
+    branch?: string,
   ) {
     super();
     this.config = config;
@@ -164,6 +171,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     this.prompt = prompt;
     this.cwd = cwd;
     this.limits = limits;
+    this.branch = branch ?? "HEAD";
     this.state.currentIteration = startIteration;
     this.state.commitCount = getBranchCommitCount(
       this.runInfo.baseCommit,
@@ -179,6 +187,24 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
       interruptHint: getInterruptHint(this.state),
       hasPendingCommitFailure: this.pendingCommitFailure !== null,
     };
+  }
+
+  private syncStatusFile(statusOverride?: StatusData["status"]): void {
+    writeStatusFile(this.runInfo.runDir, {
+      pid: process.pid,
+      branch: this.branch,
+      agent: this.agent.name,
+      status: statusOverride ?? this.state.status,
+      prompt: this.prompt.slice(0, 200),
+      startTime: this.state.startTime.toISOString(),
+      lastUpdateTime: new Date().toISOString(),
+      currentIteration: this.state.currentIteration,
+      successCount: this.state.successCount,
+      failCount: this.state.failCount,
+      totalInputTokens: this.state.totalInputTokens,
+      totalOutputTokens: this.state.totalOutputTokens,
+      commitCount: this.state.commitCount,
+    });
   }
 
   requestGracefulStop(): void {
@@ -256,6 +282,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
       this.pendingCommitFailure = null;
       this.state.status = "stopped";
       this.emit("state", this.getState());
+      clearStatusPid(this.runInfo.runDir, "stopped");
       this.emitStopped();
     })();
   }
@@ -266,6 +293,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
     // Preserve a pre-start graceful-stop request. ctrl+c can land after the
     // renderer starts listening but before the orchestrator loop begins.
     this.emit("state", this.getState());
+    this.syncStatusFile();
 
     appendDebugLog("orchestrator:start", {
       agent: redactAgentSpecForLogs(this.agent.name),
@@ -294,6 +322,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
         this.state.status = "running";
         this.emit("iteration:start", this.state.currentIteration);
         this.emit("state", this.getState());
+        this.syncStatusFile();
 
         const baseIterationPrompt = buildIterationPrompt({
           n: this.state.currentIteration,
@@ -342,6 +371,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
         this.state.iterations.push(record);
         this.emit("iteration:end", record);
         this.emit("state", this.getState());
+        this.syncStatusFile();
 
         appendDebugLog("iteration:end", {
           iteration: record.number,
@@ -396,6 +426,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
           this.state.status = "waiting";
           this.state.waitingUntil = new Date(Date.now() + backoffMs);
           this.emit("state", this.getState());
+          this.syncStatusFile();
 
           appendDebugLog("backoff:start", {
             iteration: this.state.currentIteration,
@@ -418,6 +449,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
             }
             this.state.status = "running";
             this.emit("state", this.getState());
+            this.syncStatusFile();
           }
         }
       }
@@ -437,6 +469,9 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
       this.loopDone = true;
       if (this.didStopWithoutForce()) {
         this.emitStopped();
+      }
+      if (this.state.status !== "running" && this.state.status !== "waiting") {
+        clearStatusPid(this.runInfo.runDir, this.state.status as "stopped" | "aborted");
       }
       appendDebugLog("orchestrator:end", {
         status: this.state.status,
@@ -801,6 +836,7 @@ ${this.pendingCommitFailure}
       consecutiveFailures: this.state.consecutiveFailures,
     });
     this.emit("state", this.getState());
+    clearStatusPid(this.runInfo.runDir, "stopped");
   }
 
   private stopForGracefulShutdown(): boolean {
@@ -827,6 +863,7 @@ ${this.pendingCommitFailure}
     });
     this.emit("abort", reason);
     this.emit("state", this.getState());
+    clearStatusPid(this.runInfo.runDir, "aborted");
   }
 
   private async closeAgent(): Promise<void> {
