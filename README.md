@@ -36,6 +36,10 @@
 </p>
 
 <p align="center">
+  <a href="docs/README.zh-CN.md">中文文档</a>
+</p>
+
+<p align="center">
   <img src="docs/splash.png" alt="animo — Good Night, Have Fun" width="800">
 </p>
 
