@@ -1,4 +1,4 @@
-import type { Cell } from "../renderer-diff.js";
+import type { Cell, Style } from "../renderer-diff.js";
 
 export interface TetrisState {
   fallingPieces: TetrisPiece[];
@@ -14,7 +14,7 @@ interface TetrisPiece {
   speed: number;
   phase: number;
   char: string;
-  style: "bold" | "dim";
+  style: Style;
 }
 
 interface TetrisCell {
@@ -96,7 +96,7 @@ export function generateTetrisBackground(
       speed: 0.5 + rand() * 1.5,
       phase: rand() * 20_000,
       char: tetromino.char,
-      style: rand() < 0.3 ? "bold" : "dim",
+      style: rand() < 0.3 ? "cyan" : rand() < 0.6 ? "magenta" : "yellow",
     });
   }
 
@@ -130,7 +130,10 @@ export function renderTetrisRow(
   for (const piece of state.fallingPieces) {
     const elapsed = (now + piece.phase) / 1000;
     const currentY = piece.startY + elapsed * piece.speed * 2;
-    const wrappedY = ((currentY % (state.height + 6)) + state.height + 6) % (state.height + 6) - 3;
+    const wrappedY =
+      (((currentY % (state.height + 6)) + state.height + 6) %
+        (state.height + 6)) -
+      3;
     const pieceRow = row - Math.floor(wrappedY);
 
     if (pieceRow < 0 || pieceRow >= piece.shape.length) continue;
@@ -149,14 +152,14 @@ export function renderTetrisRow(
     const cx = cell.x - xOffset;
     if (cx < 0 || cx >= width) continue;
     if (cells[cx]!.char !== " ") continue;
-    cells[cx] = { char: cell.char, style: "dim", width: 1 };
+    cells[cx] = { char: cell.char, style: "cyan", width: 1 };
   }
 
   if (row === state.height - 1) {
     for (let x = 0; x < width; x++) {
       if (cells[x]!.char !== " ") continue;
       if ((x + xOffset) % 3 === 0) {
-        cells[x] = { char: "·", style: "dim", width: 1 };
+        cells[x] = { char: "·", style: "magenta", width: 1 };
       }
     }
   }

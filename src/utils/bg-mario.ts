@@ -112,7 +112,7 @@ export function renderMarioRow(
     for (let i = 0; i < line.length; i++) {
       const cx = cloudX + i - xOffset;
       if (cx < 0 || cx >= width || line[i] === " ") continue;
-      cells[cx] = { char: line[i]!, style: "dim", width: 1 };
+      cells[cx] = { char: line[i]!, style: "cyan", width: 1 };
     }
   }
 
@@ -125,11 +125,11 @@ export function renderMarioRow(
       const blink = Math.sin(now / 600 + block.phase) > 0.3;
       cells[bx] = {
         char: blink ? "?" : "·",
-        style: blink ? "bold" : "dim",
+        style: blink ? "yellow" : "dim",
         width: 1,
       };
     } else {
-      cells[bx] = { char: "#", style: "dim", width: 1 };
+      cells[bx] = { char: "#", style: "magenta", width: 1 };
     }
   }
 
@@ -140,18 +140,18 @@ export function renderMarioRow(
     const px = pipe.x - xOffset;
     if (row === pipeTop) {
       if (px >= 0 && px < width)
-        cells[px] = { char: "┌", style: "dim", width: 1 };
+        cells[px] = { char: "┌", style: "green", width: 1 };
       if (px + 1 >= 0 && px + 1 < width)
-        cells[px + 1] = { char: "─", style: "dim", width: 1 };
+        cells[px + 1] = { char: "─", style: "green", width: 1 };
       if (px + 2 >= 0 && px + 2 < width)
-        cells[px + 2] = { char: "─", style: "dim", width: 1 };
+        cells[px + 2] = { char: "─", style: "green", width: 1 };
       if (px + 3 >= 0 && px + 3 < width)
-        cells[px + 3] = { char: "┐", style: "dim", width: 1 };
+        cells[px + 3] = { char: "┐", style: "green", width: 1 };
     } else {
       if (px >= 0 && px < width)
-        cells[px] = { char: "│", style: "dim", width: 1 };
+        cells[px] = { char: "│", style: "green", width: 1 };
       if (px + 3 >= 0 && px + 3 < width)
-        cells[px + 3] = { char: "│", style: "dim", width: 1 };
+        cells[px + 3] = { char: "│", style: "green", width: 1 };
     }
   }
 
@@ -163,7 +163,7 @@ export function renderMarioRow(
       if (gx < 4) {
         cells[x] = {
           char: groundChars[gx]!,
-          style: "dim",
+          style: "green",
           width: 1,
         };
       }
@@ -171,14 +171,12 @@ export function renderMarioRow(
   }
 
   if (row === state.groundY - 1) {
-    const coinX = Math.floor(
-      ((drift * 3) % (state.width + 10)) - 5,
-    );
+    const coinX = Math.floor(((drift * 3) % (state.width + 10)) - 5);
     const cx = coinX - xOffset;
     if (cx >= 0 && cx < width && cells[cx]!.char === " ") {
       const coinFrame = Math.floor(now / 200) % 4;
       const coinChars = ["○", "◎", "●", "◎"] as const;
-      cells[cx] = { char: coinChars[coinFrame]!, style: "bold", width: 1 };
+      cells[cx] = { char: coinChars[coinFrame]!, style: "yellow", width: 1 };
     }
   }
 }

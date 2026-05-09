@@ -1,14 +1,12 @@
 import { EventEmitter } from "node:events";
 import { describe, it, expect, vi } from "vitest";
 import * as renderer from "./renderer.js";
-import {
-  generateMarioBackground,
-  renderMarioRow,
-} from "./utils/bg-mario.js";
+import { generateMarioBackground, renderMarioRow } from "./utils/bg-mario.js";
 import {
   generateTetrisBackground,
   renderTetrisRow,
 } from "./utils/bg-tetris.js";
+import { generateRetroBackground, renderRetroRow } from "./utils/bg-retro.js";
 import { selectBackgroundTheme } from "./utils/bg-theme.js";
 import {
   Renderer,
@@ -168,22 +166,23 @@ describe("renderAgentMessage", () => {
 });
 
 describe("renderMoonStrip", () => {
-  it("renders full moons for successes and new moons for failures", () => {
+  it("renders a labeled run summary with totals", () => {
     const iterations = [
       { success: true },
       { success: true },
       { success: false },
     ];
     const text = renderMoonStrip(iterations, false, Date.now()).join("");
-    expect(text).toContain("\u{1F315}\u{1F315}\u{1F311}");
+    expect(stripAnsi(text).trim()).toBe(
+      "runs  3 total  ·  2 success  ·  1 failed  ·  stopped",
+    );
   });
 
-  it("shows an animated moon when running", () => {
+  it("shows running status when running", () => {
     const iterations = [{ success: true }];
-    const text = renderMoonStrip(iterations, true, Date.now()).join("");
-    expect(text).toContain("\u{1F315}");
-    expect(text).toMatch(
-      /[\u{1F311}\u{1F312}\u{1F313}\u{1F314}\u{1F315}\u{1F316}\u{1F317}\u{1F318}]/u,
+    const text = stripAnsi(renderMoonStrip(iterations, true, 0).join(""));
+    expect(text.trim()).toBe(
+      "runs  1 total  ·  1 success  ·  0 failed  ·  running",
     );
   });
 
@@ -192,19 +191,17 @@ describe("renderMoonStrip", () => {
     expect(text.trim()).toBe("");
   });
 
-  it("shows only active moon when running with no completed iterations", () => {
-    const text = renderMoonStrip([], true, Date.now()).join("");
-    expect(text).toMatch(
-      /[\u{1F311}\u{1F312}\u{1F313}\u{1F314}\u{1F315}\u{1F316}\u{1F317}\u{1F318}]/u,
+  it("shows only active marker when running with no completed iterations", () => {
+    const text = stripAnsi(renderMoonStrip([], true, 0).join(""));
+    expect(text.trim()).toBe(
+      "runs  0 total  ·  0 success  ·  0 failed  ·  running",
     );
   });
 });
 
 describe("modern quote rendering", () => {
   it("selects a stable quote from a seed", () => {
-    expect(selectModernQuote(0).text).toBe(
-      "Make it work, make it right, make it fast.",
-    );
+    expect(selectModernQuote(0).text).toBe("Make it work.");
     expect(selectModernQuote(0.99).author).toBe("Steve Jobs");
   });
 
@@ -420,7 +417,7 @@ describe("buildFrame", () => {
     );
   });
 
-  it("keeps all moon rows visible on tight terminals by reserving a real footer row", () => {
+  it("keeps all run history rows visible on tight terminals by reserving a real footer row", () => {
     const state: OrchestratorState = {
       status: "stopped",
       gracefulStopRequested: false,
@@ -455,10 +452,10 @@ describe("buildFrame", () => {
     );
     const lines = stripCursorHome(frame).split("\n");
     const plainLines = lines.map(stripAnsi);
-    const moonLines = plainLines.filter((line) => /🌕/.test(line));
+    const historyLines = plainLines.filter((line) => /runs/.test(line));
 
     expect(lines).toHaveLength(24);
-    expect(moonLines).toHaveLength(3);
+    expect(historyLines).toHaveLength(1);
     expect(plainLines.at(-2)?.trim()).toBe(
       "[graceful stop requested, ctrl+c again to force stop, animo again to resume]",
     );
@@ -510,7 +507,7 @@ describe("buildFrame", () => {
     }
   });
 
-  it("keeps stats visible when moon rows exceed the content viewport", () => {
+  it("keeps stats visible when run history rows exceed the content viewport", () => {
     const state: OrchestratorState = {
       status: "stopped",
       gracefulStopRequested: false,
@@ -701,7 +698,6 @@ describe("buildFrame", () => {
 
     expect(text).not.toContain("╱");
   });
-
 });
 
 describe("renderer module exports", () => {
@@ -737,29 +733,27 @@ describe("buildContentCells adaptive height", () => {
     const rows = buildContentCells("my prompt", "claude", state, "00:01:00", 0);
     const text = toText(rows);
     expect(text).toContain("a n i m o");
-    expect(text).toContain("- Kent Beck");
+    expect(text).not.toContain("- Kent Beck");
     expect(text).toContain("my prompt");
     expect(text).toContain("reading files");
     expect(text).toContain("00:01:00");
-    // Art-rendered quote uses box-drawing characters
-    expect(/[┏┗┓┛┃━┣┫╻╹╺╸┳┻]/.test(text)).toBe(true);
   });
 
-  it("keeps eyebrow above the quote art", () => {
+  it("places stats directly below the eyebrow", () => {
     const lines = buildContentCells("my prompt", "claude", state, "00:01:00", 0)
       .map(rowToString)
       .map(stripAnsi);
 
     const eyebrowIndex = lines.findIndex((line) => line.includes("a n i m o"));
-    const quoteArtIndex = lines.findIndex((line) => /[┏┗┓┛┃━┣┫╻╹╺╸┳┻]/.test(line));
+    const statsIndex = lines.findIndex((line) => line.includes("00:01:00"));
     const promptIndex = lines.findIndex((line) => line.includes("my prompt"));
 
     expect(eyebrowIndex).toBeGreaterThanOrEqual(0);
-    expect(quoteArtIndex).toBeGreaterThan(eyebrowIndex);
-    expect(promptIndex).toBeGreaterThan(quoteArtIndex);
+    expect(statsIndex).toBe(eyebrowIndex + 3);
+    expect(promptIndex).toBeGreaterThan(statsIndex);
   });
 
-  it("hides quote art first when height is insufficient", () => {
+  it("does not reserve quote space when height is constrained", () => {
     const rows = buildContentCells(
       "my prompt",
       "claude",
@@ -776,7 +770,7 @@ describe("buildContentCells adaptive height", () => {
     expect(rows.length).toBeLessThanOrEqual(18);
   });
 
-  it("hides eyebrow after quote", () => {
+  it("hides eyebrow after optional content is removed", () => {
     const rows = buildContentCells(
       "my prompt",
       "claude",
@@ -828,7 +822,7 @@ describe("buildContentCells adaptive height", () => {
     expect(rows.length).toBeLessThanOrEqual(6);
   });
 
-  it("always keeps stats and moon strip even at minimum height", () => {
+  it("always keeps stats and run history even at minimum height", () => {
     const rows = buildContentCells(
       "my prompt",
       "claude",
@@ -839,11 +833,11 @@ describe("buildContentCells adaptive height", () => {
     );
     const text = toText(rows);
     expect(text).toContain("00:01:00");
-    expect(text).toMatch(/🌕/);
+    expect(text).toContain("runs");
     expect(rows.length).toBeLessThanOrEqual(5);
   });
 
-  it("keeps stats visible when moon rows alone exceed the available height", () => {
+  it("keeps stats visible when run history rows alone exceed the available height", () => {
     const rows = buildContentCells(
       "my prompt",
       "claude",
@@ -864,7 +858,7 @@ describe("buildContentCells adaptive height", () => {
     expect(rows.length).toBeLessThanOrEqual(22);
   });
 
-  it("drops all moon rows when no moon rows fit", () => {
+  it("drops all run history rows when no run history rows fit", () => {
     const rows = buildContentCells(
       "my prompt",
       "claude",
@@ -883,7 +877,7 @@ describe("buildContentCells adaptive height", () => {
 
     expect(rows).toHaveLength(1);
     expect(text).toContain("00:01:00");
-    expect(text).not.toMatch(/🌕/);
+    expect(text).not.toContain("runs");
   });
 });
 
@@ -1366,11 +1360,41 @@ describe("Renderer terminal title", () => {
 
 describe("background themes", () => {
   describe("selectBackgroundTheme", () => {
-    it("returns one of the three themes", () => {
-      for (let i = 0; i < 30; i++) {
+    it("returns one of the available themes", () => {
+      const expected = [
+        "stars",
+        "mario",
+        "tetris",
+        "dragon",
+        "invaders",
+        "pac",
+        "zelda",
+      ];
+
+      for (let i = 0; i < 70; i++) {
         const theme = selectBackgroundTheme(i / 30);
-        expect(["stars", "mario", "tetris"]).toContain(theme);
+        expect(expected).toContain(theme);
       }
+    });
+
+    it("can select every available theme from seed ranges", () => {
+      const selected = new Set(
+        Array.from({ length: 7 }, (_, index) =>
+          selectBackgroundTheme((index + 0.1) / 7),
+        ),
+      );
+
+      expect(selected).toEqual(
+        new Set([
+          "stars",
+          "mario",
+          "tetris",
+          "dragon",
+          "invaders",
+          "pac",
+          "zelda",
+        ]),
+      );
     });
 
     it("is deterministic for same seed", () => {
@@ -1430,6 +1454,35 @@ describe("background themes", () => {
     });
   });
 
+  describe("retro background", () => {
+    it("generates sprites for each retro theme", () => {
+      for (const theme of ["dragon", "invaders", "pac", "zelda"] as const) {
+        const state = generateRetroBackground(theme, 80, 24, 42);
+        expect(state.theme).toBe(theme);
+        expect(state.sprites.length).toBeGreaterThan(0);
+        expect(state.width).toBe(80);
+        expect(state.height).toBe(24);
+      }
+    });
+
+    it("renders cells without changing row width", () => {
+      const state = generateRetroBackground("dragon", 80, 24, 42);
+      const cells = emptyCells(80);
+      renderRetroRow(state, cells, state.sprites[0]!.y, 0, 80, 0);
+
+      expect(cells).toHaveLength(80);
+      expect(cells.some((cell) => cell.char !== " ")).toBe(true);
+    });
+
+    it("adds a dot trail for the pac-style theme", () => {
+      const state = generateRetroBackground("pac", 40, 12, 42);
+      const cells = emptyCells(40);
+      renderRetroRow(state, cells, 11, 0, 40, 0);
+
+      expect(rowToString(cells)).toContain("·");
+    });
+  });
+
   describe("buildFrameCells with themes", () => {
     const baseState: OrchestratorState = {
       status: "running",
@@ -1465,10 +1518,10 @@ describe("background themes", () => {
         [],
         [],
         [],
-        selectModernQuote(0),
         undefined,
         "mario",
         mario,
+        null,
         null,
       );
       expect(cells.length).toBe(30);
@@ -1489,13 +1542,40 @@ describe("background themes", () => {
         [],
         [],
         [],
-        selectModernQuote(0),
         undefined,
         "tetris",
         null,
         tetris,
+        null,
       );
       expect(cells.length).toBe(30);
+    });
+
+    it("renders with retro themes without errors", () => {
+      const retro = generateRetroBackground("dragon", 100, 30, 42);
+      const cells = buildFrameCells(
+        "test prompt",
+        "claude",
+        baseState,
+        [],
+        [],
+        [],
+        Date.now(),
+        100,
+        30,
+        [],
+        [],
+        [],
+        undefined,
+        "dragon",
+        null,
+        null,
+        retro,
+      );
+      expect(cells.length).toBe(30);
+      expect(cells.some((row) => row.some((cell) => cell.char !== " "))).toBe(
+        true,
+      );
     });
   });
 });

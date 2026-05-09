@@ -24,6 +24,11 @@ import {
   renderTetrisRow,
   type TetrisState,
 } from "./utils/bg-tetris.js";
+import {
+  generateRetroBackground,
+  renderRetroRow,
+  type RetroBackgroundState,
+} from "./utils/bg-retro.js";
 import { formatElapsed } from "./utils/time.js";
 import { formatTokens } from "./utils/tokens.js";
 import { wordWrap } from "./utils/wordwrap.js";
@@ -47,7 +52,6 @@ const STAR_DENSITY = 0.035;
 const DEFAULT_METEOR_FREQUENCY = 3;
 const METEOR_SEED_OFFSET = 101;
 const TICK_MS = 200;
-const MOONS_PER_ROW = 30;
 const MOON_PHASE_PERIOD = 1600;
 const MAX_MSG_LINES = 3;
 const MAX_MSG_LINE_LEN = CONTENT_WIDTH;
@@ -57,23 +61,23 @@ const GRACEFUL_STOP_HINT =
 const DONE_HINT = "[ctrl+c to exit]";
 const MODERN_QUOTES = [
   {
-    text: "Make it work, make it right, make it fast.",
+    text: "Make it work.",
     author: "Kent Beck",
   },
   {
-    text: "Simplicity is prerequisite for reliability.",
+    text: "Seek simplicity.",
     author: "Edsger W. Dijkstra",
   },
   {
-    text: "The best way to predict the future is to invent it.",
+    text: "Invent the future.",
     author: "Alan Kay",
   },
   {
-    text: "Premature optimization is the root of all evil.",
+    text: "Ship small slices.",
     author: "Donald Knuth",
   },
   {
-    text: "Programs must be written for people to read.",
+    text: "Readable wins.",
     author: "Harold Abelson",
   },
   {
@@ -81,11 +85,11 @@ const MODERN_QUOTES = [
     author: "Steve Jobs",
   },
   {
-    text: "What you do every day matters more than what you do once.",
+    text: "Keep moving.",
     author: "Gretchen Rubin",
   },
   {
-    text: "The journey is the reward.",
+    text: "Journey is reward.",
     author: "Steve Jobs",
   },
 ] as const;
@@ -169,10 +173,10 @@ export function renderTitleCells(agentName?: string): Cell[][] {
     ...textToCells("  ", "normal"),
   ];
   const eyebrow: Cell[] = [
-    ...textToCells(spacedLabel("animo"), "dim"),
+    ...textToCells(spacedLabel("animo"), "cyan"),
     ...segments.flatMap((segment) => [
       ...separator,
-      ...textToCells(spacedLabel(segment), "dim"),
+      ...textToCells(spacedLabel(segment), "magenta"),
     ]),
   ];
 
@@ -187,25 +191,25 @@ export function renderStatsCells(
   tokensEstimated = false,
 ): Cell[] {
   return [
-    ...textToCells(elapsed, "bold"),
+    ...textToCells(elapsed, "yellow"),
     ...textToCells("  ", "normal"),
     ...textToCells("\u00b7", "dim"),
     ...textToCells("  ", "normal"),
     ...textToCells(
       formatTokenCount(inputTokens, "in", tokensEstimated),
-      "normal",
+      "cyan",
     ),
     ...textToCells("  ", "normal"),
     ...textToCells("\u00b7", "dim"),
     ...textToCells("  ", "normal"),
     ...textToCells(
       formatTokenCount(outputTokens, "out", tokensEstimated),
-      "normal",
+      "magenta",
     ),
     ...textToCells("  ", "normal"),
     ...textToCells("\u00b7", "dim"),
     ...textToCells("  ", "normal"),
-    ...textToCells(formatCommitCount(commitCount), "normal"),
+    ...textToCells(formatCommitCount(commitCount), "green"),
   ];
 }
 
@@ -248,23 +252,34 @@ export function renderMoonStripCells(
   isRunning: boolean,
   now: number,
 ): Cell[][] {
-  const moons: string[] = iterations.map((iter) =>
-    getMoonPhase(iter.success ? "success" : "fail"),
-  );
-  if (isRunning) {
-    moons.push(getMoonPhase("active", now, MOON_PHASE_PERIOD));
-  }
-  if (moons.length === 0) return [[]];
-  const rows: Cell[][] = [];
-  for (let i = 0; i < moons.length; i += MOONS_PER_ROW) {
-    const slice = moons.slice(i, i + MOONS_PER_ROW);
-    const cells: Cell[] = [];
-    for (const moon of slice) {
-      cells.push(...textToCells(moon, "normal"));
-    }
-    rows.push(cells);
-  }
-  return rows;
+  void now;
+  if (iterations.length === 0 && !isRunning) return [[]];
+  const successCount = iterations.filter((iter) => iter.success).length;
+  const failCount = iterations.length - successCount;
+  const status = isRunning ? "running" : "stopped";
+
+  return [
+    [
+      ...textToCells("runs", "dim"),
+      ...textToCells("  ", "normal"),
+      ...textToCells(String(iterations.length), "yellow"),
+      ...textToCells(" total", "normal"),
+      ...textToCells("  ", "normal"),
+      ...textToCells("·", "dim"),
+      ...textToCells("  ", "normal"),
+      ...textToCells(String(successCount), "green"),
+      ...textToCells(" success", "normal"),
+      ...textToCells("  ", "normal"),
+      ...textToCells("·", "dim"),
+      ...textToCells("  ", "normal"),
+      ...textToCells(String(failCount), failCount > 0 ? "red" : "dim"),
+      ...textToCells(" failed", "normal"),
+      ...textToCells("  ", "normal"),
+      ...textToCells("·", "dim"),
+      ...textToCells("  ", "normal"),
+      ...textToCells(status, isRunning ? "yellow" : "dim"),
+    ],
+  ];
 }
 
 export function selectModernQuote(seed = Math.random()): ModernQuote {
@@ -330,7 +345,7 @@ export function renderMoonStrip(
 // ── Star rendering (cell-based) ─────────────────────────────
 
 function starStyle(state: "bright" | "dim" | "hidden"): Style {
-  if (state === "bright") return "bold";
+  if (state === "bright") return "cyan";
   if (state === "dim") return "dim";
   return "normal";
 }
@@ -410,7 +425,7 @@ function placeMeteorsInCells(
       const localX = trail.x - xOffset;
       cells[localX] = {
         char: trail.char,
-        style: trail.state === "bright" ? "bold" : "dim",
+        style: trail.state === "bright" ? "yellow" : "dim",
         width: 1,
       };
     }
@@ -457,7 +472,7 @@ function placeAuroraInCells(
 
     cells[localX] = {
       char: glyphs[(x + absoluteRow) % glyphs.length]!,
-      style: "dim",
+      style: nearUpper ? "cyan" : "magenta",
       width: 1,
     };
   }
@@ -484,14 +499,13 @@ export function renderStarFieldLines(
   return lines;
 }
 
-
-
 function renderThemedLineCells(
   theme: BackgroundTheme,
   stars: Star[],
   meteors: Meteor[],
   mario: MarioState | null,
   tetris: TetrisState | null,
+  retro: RetroBackgroundState | null,
   width: number,
   y: number,
   now: number,
@@ -502,6 +516,8 @@ function renderThemedLineCells(
     renderMarioRow(mario, cells, absoluteRow, 0, width, now);
   } else if (theme === "tetris" && tetris) {
     renderTetrisRow(tetris, cells, absoluteRow, 0, width, now);
+  } else if (retro) {
+    renderRetroRow(retro, cells, absoluteRow, 0, width, now);
   } else {
     placeAuroraInCells(cells, 0, width, absoluteRow, now);
     placeStarsInCells(cells, stars, y, 0, width, 0, now);
@@ -516,6 +532,7 @@ function renderThemedSideCells(
   meteors: Meteor[],
   mario: MarioState | null,
   tetris: TetrisState | null,
+  retro: RetroBackgroundState | null,
   rowIndex: number,
   xOffset: number,
   sideWidth: number,
@@ -528,6 +545,8 @@ function renderThemedSideCells(
     renderMarioRow(mario, cells, absoluteRow, xOffset, sideWidth, now);
   } else if (theme === "tetris" && tetris) {
     renderTetrisRow(tetris, cells, absoluteRow, xOffset, sideWidth, now);
+  } else if (retro) {
+    renderRetroRow(retro, cells, absoluteRow, xOffset, sideWidth, now);
   } else {
     placeAuroraInCells(cells, xOffset, sideWidth, absoluteRow, now);
     placeStarsInCells(
@@ -596,7 +615,6 @@ function renderResumeHintCells(
   return centerLineCells(textToCells(hint, "dim"), width);
 }
 
-
 // ── Build full frame (cell-based) ────────────────────────────
 
 /**
@@ -604,7 +622,8 @@ function renderResumeHintCells(
  *
  * When `availableHeight` is constrained, the layout drops optional sections in
  * priority order (ASCII art, eyebrow, agent message, then prompt) so the stats
- * row remains visible and any remaining space is used for the newest moon rows.
+ * row remains visible and any remaining space is used for the newest run
+ * history rows.
  */
 export function buildContentCells(
   prompt: string,
@@ -613,10 +632,9 @@ export function buildContentCells(
   elapsed: string,
   now: number,
   availableHeight?: number,
-  quote: ModernQuote = selectModernQuote(0),
 ): Cell[][] {
   const isRunning = state.status === "running" || state.status === "waiting";
-  const moonRows = renderMoonStripCells(state.iterations, isRunning, now);
+  const historyRows = renderMoonStripCells(state.iterations, isRunning, now);
   const maxRows = availableHeight ?? Infinity;
   if (maxRows <= 0) return [];
 
@@ -633,7 +651,6 @@ export function buildContentCells(
     top: [[]] as Cell[][],
     eyebrow: [titleCells[0], [], []] as Cell[][],
     art: titleCells.slice(2),
-    quote: [[], ...renderModernQuoteCells(quote)] as Cell[][],
     prompt: [titleSpacer, ...promptRows, []] as Cell[][],
     stats: [
       renderStatsCells(
@@ -652,22 +669,20 @@ export function buildContentCells(
         state.lastAgentError,
       ),
     ],
-    moon: [[], ...moonRows] as Cell[][],
+    history: [[], ...historyRows] as Cell[][],
   };
 
   const flattenSections = (): Cell[][] => [
     ...sections.top,
     ...sections.eyebrow,
-    ...sections.art,
-    ...sections.quote,
-    ...sections.prompt,
     ...sections.stats,
+    ...sections.art,
+    ...sections.prompt,
     ...sections.agent,
-    ...sections.moon,
+    ...sections.history,
   ];
 
   const optionalSections: Array<keyof typeof sections> = [
-    "quote",
     "eyebrow",
     "agent",
     "prompt",
@@ -685,21 +700,22 @@ export function buildContentCells(
   }
 
   if (rows.length > maxRows) {
-    const nonMoonRows = [
+    const nonHistoryRows = [
       ...sections.top,
       ...sections.eyebrow,
-      ...sections.art,
-      ...sections.quote,
-      ...sections.prompt,
       ...sections.stats,
+      ...sections.art,
+      ...sections.prompt,
       ...sections.agent,
     ].filter((row) => row.length > 0);
-    const allowedMoonRows = Math.max(0, maxRows - nonMoonRows.length);
-    const visibleMoonRows =
-      allowedMoonRows === 0
+    const allowedHistoryRows = Math.max(0, maxRows - nonHistoryRows.length);
+    const visibleHistoryRows =
+      allowedHistoryRows === 0
         ? []
-        : moonRows.filter((row) => row.length > 0).slice(-allowedMoonRows);
-    rows = [...nonMoonRows, ...visibleMoonRows];
+        : historyRows
+            .filter((row) => row.length > 0)
+            .slice(-allowedHistoryRows);
+    rows = [...nonHistoryRows, ...visibleHistoryRows];
   }
 
   return rows;
@@ -718,11 +734,11 @@ export function buildFrameCells(
   topMeteors: Meteor[] = [],
   bottomMeteors: Meteor[] = [],
   sideMeteors: Meteor[] = [],
-  quote: ModernQuote = selectModernQuote(0),
   _pet?: TerminalPet,
   bgTheme: BackgroundTheme = "stars",
   marioState: MarioState | null = null,
   tetrisState: TetrisState | null = null,
+  retroState: RetroBackgroundState | null = null,
 ): Cell[][] {
   const elapsedMs = now - state.startTime.getTime();
   const elapsed = formatElapsed(elapsedMs);
@@ -735,7 +751,6 @@ export function buildFrameCells(
     elapsed,
     now,
     availableHeight,
-    quote,
   );
 
   while (contentRows.length < Math.min(BASE_CONTENT_ROWS, availableHeight)) {
@@ -779,6 +794,7 @@ export function buildFrameCells(
         visibleTopMeteors,
         marioState,
         tetrisState,
+        retroState,
         terminalWidth,
         y,
         now,
@@ -794,6 +810,7 @@ export function buildFrameCells(
       visibleSideMeteors,
       marioState,
       tetrisState,
+      retroState,
       i,
       0,
       sideWidth,
@@ -807,6 +824,7 @@ export function buildFrameCells(
       visibleSideMeteors,
       marioState,
       tetrisState,
+      retroState,
       i,
       terminalWidth - rightSideWidth,
       rightSideWidth,
@@ -824,6 +842,7 @@ export function buildFrameCells(
         visibleBottomMeteors,
         marioState,
         tetrisState,
+        retroState,
         terminalWidth,
         y,
         now,
@@ -896,10 +915,10 @@ export class Renderer {
   private cachedWidth = 0;
   private cachedHeight = 0;
   private meteorFrequency: number;
-  private quote: ModernQuote;
   private bgTheme: BackgroundTheme;
   private marioState: MarioState | null = null;
   private tetrisState: TetrisState | null = null;
+  private retroState: RetroBackgroundState | null = null;
   private prevCells: Cell[][] = [];
   private prevTitle: string | null = null;
   private titleSaved = false;
@@ -931,7 +950,6 @@ export class Renderer {
       0,
       Math.floor(options.meteorFrequency ?? DEFAULT_METEOR_FREQUENCY),
     );
-    this.quote = selectModernQuote();
     this.bgTheme = options.backgroundTheme ?? selectBackgroundTheme();
     this.state = orchestrator.getState();
     this.seedTop = Math.floor(Math.random() * 2147483646) + 1;
@@ -1047,12 +1065,34 @@ export class Renderer {
           availableHeight,
           this.seedTop,
         );
+        this.tetrisState = null;
+        this.retroState = null;
       } else if (this.bgTheme === "tetris") {
         this.tetrisState = generateTetrisBackground(
           w,
           availableHeight,
           this.seedTop,
         );
+        this.marioState = null;
+        this.retroState = null;
+      } else if (
+        this.bgTheme === "dragon" ||
+        this.bgTheme === "invaders" ||
+        this.bgTheme === "pac" ||
+        this.bgTheme === "zelda"
+      ) {
+        this.retroState = generateRetroBackground(
+          this.bgTheme,
+          w,
+          availableHeight,
+          this.seedTop,
+        );
+        this.marioState = null;
+        this.tetrisState = null;
+      } else {
+        this.marioState = null;
+        this.tetrisState = null;
+        this.retroState = null;
       }
       return true;
     }
@@ -1080,11 +1120,11 @@ export class Renderer {
       this.topMeteors,
       this.bottomMeteors,
       this.sideMeteors,
-      this.quote,
       undefined,
       this.bgTheme,
       this.marioState,
       this.tetrisState,
+      this.retroState,
     );
 
     if (this.isFirstFrame || resized) {

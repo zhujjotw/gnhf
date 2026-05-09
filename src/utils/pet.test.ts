@@ -4,10 +4,7 @@ import { getPetPhase, renderPetFrame, selectTerminalPet } from "./pet.js";
 describe("terminal pets", () => {
   it("selects from six stable pet slots", () => {
     const ids = new Set(
-      Array.from(
-        { length: 6 },
-        (_, index) => selectTerminalPet(index / 6).id,
-      ),
+      Array.from({ length: 6 }, (_, index) => selectTerminalPet(index / 6).id),
     );
 
     expect(ids.size).toBe(6);

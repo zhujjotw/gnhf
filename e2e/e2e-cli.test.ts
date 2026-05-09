@@ -156,7 +156,7 @@ describe.concurrent("animo e2e cli", () => {
     });
   }, 15_000);
 
-  it("exits with error when --worktree is used from a animo branch", async () => {
+  it("exits with error when --worktree is used from an animo branch", async () => {
     await withTemp(async (temp) => {
       const cwd = createRepo(temp);
       git(["checkout", "-b", "animo/existing-run"], cwd);
@@ -170,7 +170,7 @@ describe.concurrent("animo e2e cli", () => {
 
       expect(result.code).not.toBe(0);
       expect(result.stderr).toContain(
-        "Cannot use --worktree from a animo branch",
+        "Cannot use --worktree from an animo branch",
       );
     });
   }, 15_000);

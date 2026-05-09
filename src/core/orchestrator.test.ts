@@ -1273,6 +1273,59 @@ describe("Orchestrator backoff behavior", () => {
     await startPromise;
   });
 
+  it("waits five hours before retrying quota reset errors", async () => {
+    vi.useFakeTimers();
+
+    let callCount = 0;
+    const agent: Agent = {
+      name: "codex",
+      run: vi.fn(async () => {
+        callCount++;
+        if (callCount === 1) {
+          throw new Error(
+            "quota exceeded; please wait until your quota resets",
+          );
+        }
+        return createSuccessResult();
+      }),
+    };
+    const orchestrator = new Orchestrator(
+      config,
+      agent,
+      runInfo,
+      "ship it",
+      "/repo",
+      0,
+      { maxIterations: 2 },
+    );
+
+    const startPromise = orchestrator.start();
+
+    await vi.waitFor(() => {
+      expect(agent.run).toHaveBeenCalledTimes(1);
+    });
+
+    await vi.waitFor(() => {
+      expect(orchestrator.getState().status).toBe("waiting");
+    });
+
+    const waitingUntil = orchestrator.getState().waitingUntil;
+    const remainingWaitMs = (waitingUntil?.getTime() ?? 0) - Date.now();
+    expect(remainingWaitMs).toBeGreaterThan(5 * 60 * 60 * 1000 - 1_000);
+    expect(remainingWaitMs).toBeLessThanOrEqual(5 * 60 * 60 * 1000);
+
+    await vi.advanceTimersByTimeAsync(4 * 60 * 60 * 1000);
+    expect(agent.run).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(60 * 60 * 1000);
+
+    await vi.waitFor(() => {
+      expect(agent.run).toHaveBeenCalledTimes(2);
+    });
+
+    await startPromise;
+  });
+
   it("aborts immediately for permanent agent errors without backoff", async () => {
     vi.useFakeTimers();
 

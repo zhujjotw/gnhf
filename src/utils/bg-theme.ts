@@ -1,12 +1,19 @@
-import type { Cell } from "../renderer-diff.js";
+import type { Cell, Style } from "../renderer-diff.js";
 
-export type BackgroundTheme = "stars" | "mario" | "tetris";
+export type BackgroundTheme =
+  | "stars"
+  | "mario"
+  | "tetris"
+  | "dragon"
+  | "invaders"
+  | "pac"
+  | "zelda";
 
 export interface BgElement {
   x: number;
   y: number;
   char: string;
-  style: "bold" | "dim" | "normal";
+  style: Style;
 }
 
 export interface BackgroundState {
@@ -30,7 +37,15 @@ export interface BackgroundRenderer {
 }
 
 export function selectBackgroundTheme(seed = Math.random()): BackgroundTheme {
-  const themes: BackgroundTheme[] = ["stars", "mario", "tetris"];
+  const themes: BackgroundTheme[] = [
+    "stars",
+    "mario",
+    "tetris",
+    "dragon",
+    "invaders",
+    "pac",
+    "zelda",
+  ];
   const normalized = Number.isFinite(seed) ? Math.abs(seed) % 1 : 0;
   return themes[Math.floor(normalized * themes.length)]!;
 }

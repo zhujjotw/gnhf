@@ -60,8 +60,7 @@ export function renderTextAsArt(
     for (const ch of word) wordWidth += charWidth(ch);
 
     const spaceWidth = charWidth(" ");
-    const neededWidth =
-      currentWidth === 0 ? wordWidth : spaceWidth + wordWidth;
+    const neededWidth = currentWidth === 0 ? wordWidth : spaceWidth + wordWidth;
 
     if (currentWidth > 0 && currentWidth + neededWidth > maxWidth) {
       lines.push(current);

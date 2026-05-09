@@ -273,9 +273,27 @@ const PETS = [
 ] as const satisfies readonly TerminalPet[];
 
 const HATCH_SPARKLES = [
-  ["  *   . *   ", "    . * .   ", " *    .  *  ", "  .  *   .  ", "   *  . *   "],
-  [" .  *    .  ", "   *  . *   ", "  .   *  .  ", " *  .   *   ", "    .  *    "],
-  ["   .  *  .  ", " *   .  *   ", "    *  .    ", "  .  *  .   ", " *    .  *  "],
+  [
+    "  *   . *   ",
+    "    . * .   ",
+    " *    .  *  ",
+    "  .  *   .  ",
+    "   *  . *   ",
+  ],
+  [
+    " .  *    .  ",
+    "   *  . *   ",
+    "  .   *  .  ",
+    " *  .   *   ",
+    "    .  *    ",
+  ],
+  [
+    "   .  *  .  ",
+    " *   .  *   ",
+    "    *  .    ",
+    "  .  *  .   ",
+    " *    .  *  ",
+  ],
 ] as const;
 
 export function selectTerminalPet(seed = Math.random()): TerminalPet {

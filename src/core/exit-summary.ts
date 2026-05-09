@@ -24,6 +24,10 @@ export interface ExitSummaryOptions {
   color: boolean;
   terminalColumns?: number;
   hasPendingCommitFailure?: boolean;
+  lastIteration?: {
+    success: boolean;
+    summary: string;
+  };
 }
 
 const MIN_CARD_WIDTH = 62;
@@ -187,6 +191,12 @@ export function renderExitSummary(options: ExitSummaryOptions): string {
   const commits = plural(options.commitCount, "commit");
   const linesAdded = `+${formatNumber(options.diffStats.linesAdded)}`;
   const linesDeleted = `-${formatNumber(options.diffStats.linesDeleted)}`;
+  const lastResult =
+    options.lastIteration === undefined
+      ? undefined
+      : `${options.lastIteration.success ? s.green("success") : s.red("failed")}: ${
+          options.lastIteration.summary
+        }`;
 
   const lines = [
     cardBorder("╭", "╮", cardWidth, s.dim),
@@ -213,6 +223,9 @@ export function renderExitSummary(options: ExitSummaryOptions): string {
     "",
     commandLine(s.dim("notes"), options.notesPath),
     commandLine(s.dim("debug log"), options.logPath),
+    ...(lastResult === undefined
+      ? []
+      : [commandLine(s.dim("final result"), lastResult)]),
     ...(options.hasPendingCommitFailure
       ? [
           commandLine(

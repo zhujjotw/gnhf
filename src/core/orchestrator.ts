@@ -79,6 +79,25 @@ export interface RunLimits {
 }
 
 const STOP_CLOSE_AGENT_GRACE_MS = 250;
+const QUOTA_RESET_BACKOFF_MS = 5 * 60 * 60 * 1000;
+
+function getQuotaResetBackoffMs(message: string | null | undefined): number {
+  if (!message) return 0;
+  const normalized = message.toLowerCase();
+  const mentionsQuota =
+    normalized.includes("quota") ||
+    normalized.includes("usage limit") ||
+    normalized.includes("rate limit") ||
+    normalized.includes("credit") ||
+    normalized.includes("额度");
+  const mentionsResetOrWait =
+    normalized.includes("reset") ||
+    normalized.includes("try again later") ||
+    normalized.includes("wait") ||
+    normalized.includes("等待") ||
+    normalized.includes("重置");
+  return mentionsQuota && mentionsResetOrWait ? QUOTA_RESET_BACKOFF_MS : 0;
+}
 
 type RunIterationResult =
   | {
@@ -368,7 +387,11 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
         }
 
         if (this.state.consecutiveErrors > 0 && !this.stopRequested) {
+          const quotaResetBackoffMs = getQuotaResetBackoffMs(
+            this.state.lastAgentError,
+          );
           const backoffMs =
+            quotaResetBackoffMs ||
             60_000 * Math.pow(2, this.state.consecutiveErrors - 1);
           this.state.status = "waiting";
           this.state.waitingUntil = new Date(Date.now() + backoffMs);
@@ -378,6 +401,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
             iteration: this.state.currentIteration,
             consecutiveErrors: this.state.consecutiveErrors,
             backoffMs,
+            reason: quotaResetBackoffMs ? "quota-reset" : "error",
           });
 
           await this.interruptibleSleep(backoffMs);

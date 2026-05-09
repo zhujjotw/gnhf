@@ -78,6 +78,11 @@ describe("rowToString", () => {
     expect(rowToString(cells)).toBe("\x1b[2mhi\x1b[0m");
   });
 
+  it("wraps colored cells in ANSI escapes", () => {
+    const cells = textToCells("ok", "green");
+    expect(rowToString(cells)).toBe("\x1b[32mok\x1b[0m");
+  });
+
   it("handles style transitions", () => {
     const cells: Cell[] = [
       { char: "a", style: "bold", width: 1 },
@@ -176,6 +181,14 @@ describe("emitDiff", () => {
     ]);
     expect(result).toContain("\x1b[1m");
     expect(result).toContain("b");
+  });
+
+  it("emits color codes for colored cells", () => {
+    const result = emitDiff([
+      { row: 0, col: 0, cell: { char: "g", style: "green", width: 1 } },
+    ]);
+    expect(result).toContain("\x1b[32m");
+    expect(result).toContain("g");
   });
 
   it("skips cursor move for consecutive cells on same row", () => {

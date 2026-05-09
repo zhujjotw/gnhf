@@ -100,6 +100,23 @@ describe("renderExitSummary", () => {
     );
   });
 
+  it("renders the final agent result summary", () => {
+    const summary = stripExitSummaryAnsi(
+      renderExitSummary({
+        ...baseSummary,
+        color: false,
+        lastIteration: {
+          success: false,
+          summary: "stop condition was met but no more changes were needed",
+        },
+      }),
+    );
+
+    expect(summary).toContain(
+      "final result    failed: stop condition was met but no more changes were needed",
+    );
+  });
+
   it("adds ANSI color when requested", () => {
     const summary = renderExitSummary({ ...baseSummary, color: true });
 

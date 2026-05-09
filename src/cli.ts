@@ -1113,6 +1113,7 @@ program
           color: shouldUseColor(),
           terminalColumns: process.stdout.columns,
           hasPendingCommitFailure: finalState.hasPendingCommitFailure,
+          lastIteration: finalState.iterations.at(-1),
         });
 
         appendDebugLog("run:complete", {

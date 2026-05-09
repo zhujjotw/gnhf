@@ -2,7 +2,15 @@ import { graphemeWidth, splitGraphemes } from "./utils/terminal-width.js";
 
 // ── Cell types ───────────────────────────────────────────────
 
-export type Style = "normal" | "bold" | "dim";
+export type Style =
+  | "normal"
+  | "bold"
+  | "dim"
+  | "cyan"
+  | "green"
+  | "yellow"
+  | "red"
+  | "magenta";
 
 export interface Cell {
   char: string;
@@ -47,6 +55,17 @@ export function emptyCells(n: number): Cell[] {
 
 // ── Cell → string conversion ────────────────────────────────
 
+function styleAnsi(style: Style): string {
+  if (style === "bold") return "\x1b[1m";
+  if (style === "dim") return "\x1b[2m";
+  if (style === "cyan") return "\x1b[36m";
+  if (style === "green") return "\x1b[32m";
+  if (style === "yellow") return "\x1b[33m";
+  if (style === "red") return "\x1b[31m";
+  if (style === "magenta") return "\x1b[35m";
+  return "";
+}
+
 export function rowToString(cells: Cell[]): string {
   let result = "";
   let currentStyle: Style = "normal";
@@ -54,8 +73,7 @@ export function rowToString(cells: Cell[]): string {
     if (cell.width === 0) continue;
     if (cell.style !== currentStyle) {
       if (currentStyle !== "normal") result += "\x1b[0m";
-      if (cell.style === "bold") result += "\x1b[1m";
-      else if (cell.style === "dim") result += "\x1b[2m";
+      result += styleAnsi(cell.style);
       currentStyle = cell.style;
     }
     result += cell.char;
@@ -102,8 +120,7 @@ export function emitDiff(changes: Change[]): string {
 
     if (cell.style !== currentStyle) {
       result += "\x1b[0m";
-      if (cell.style === "bold") result += "\x1b[1m";
-      else if (cell.style === "dim") result += "\x1b[2m";
+      result += styleAnsi(cell.style);
       currentStyle = cell.style;
     }
 
