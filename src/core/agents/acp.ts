@@ -43,7 +43,7 @@ export interface AcpAgentDeps {
 function buildAcpPrompt(prompt: string, schema: AgentOutputSchema): string {
   return `${prompt}
 
-## gnhf final output contract
+## animo final output contract
 
 When the iteration is complete, your final assistant message must be a single JSON object that matches this JSON Schema. Return only the JSON object. Do not wrap it in Markdown fences. Do not include prose before or after the JSON.
 
@@ -367,7 +367,7 @@ export class AcpAgent implements Agent {
         flushPendingMessage();
       } catch (error) {
         if (signal?.aborted || isAbortError(error)) {
-          await turn.cancel({ reason: "gnhf-aborted" }).catch(() => undefined);
+          await turn.cancel({ reason: "animo-aborted" }).catch(() => undefined);
           appendDebugLog("acp:turn:aborted", {
             target: redactAcpTargetForLogs(this.target),
             requestId,
@@ -467,7 +467,7 @@ export class AcpAgent implements Agent {
     this.runtime = null;
     this.handle = null;
     try {
-      await runtime.close({ handle, reason: "gnhf-shutdown" });
+      await runtime.close({ handle, reason: "animo-shutdown" });
       appendDebugLog("acp:close", {
         target: redactAcpTargetForLogs(this.target),
       });

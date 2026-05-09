@@ -153,7 +153,7 @@ describe("startSleepPrevention", () => {
       expect.objectContaining({
         detached: true,
         stdio: "inherit",
-        env: expect.objectContaining({ GNHF_SLEEP_INHIBITED: "1" }),
+        env: expect.objectContaining({ ANIMO_SLEEP_INHIBITED: "1" }),
       }),
     );
     expect(result).toEqual({ type: "reexeced", exitCode: 0 });
@@ -210,7 +210,7 @@ describe("startSleepPrevention", () => {
       processArgv1: "/dist/cli.mjs",
       processExecPath: "/node",
       reexecEnv: {
-        GNHF_REEXEC_STDIN_PROMPT: "objective from stdin",
+        ANIMO_REEXEC_STDIN_PROMPT: "objective from stdin",
       },
     });
 
@@ -219,8 +219,8 @@ describe("startSleepPrevention", () => {
       expect.any(Array),
       expect.objectContaining({
         env: expect.objectContaining({
-          GNHF_REEXEC_STDIN_PROMPT: "objective from stdin",
-          GNHF_SLEEP_INHIBITED: "1",
+          ANIMO_REEXEC_STDIN_PROMPT: "objective from stdin",
+          ANIMO_SLEEP_INHIBITED: "1",
         }),
       }),
     );
@@ -248,14 +248,14 @@ describe("startSleepPrevention", () => {
   });
 
   it("signals readiness when running inside the re-execed Linux process", async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-sleep-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-sleep-"));
     const readyPath = join(tempDir, "reexec-ready");
 
     try {
       const result = await startSleepPrevention(["ship it"], {
         env: {
-          GNHF_SLEEP_INHIBITED: "1",
-          GNHF_SLEEP_REEXEC_READY_PATH: readyPath,
+          ANIMO_SLEEP_INHIBITED: "1",
+          ANIMO_SLEEP_REEXEC_READY_PATH: readyPath,
         },
         platform: "linux",
       });
@@ -268,15 +268,15 @@ describe("startSleepPrevention", () => {
   });
 
   it("does not overwrite an untrusted readiness path from the environment", async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-sleep-test-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-sleep-test-"));
     const victimPath = join(tempDir, "victim.txt");
     writeFileSync(victimPath, "do not touch", "utf-8");
 
     try {
       const result = await startSleepPrevention(["ship it"], {
         env: {
-          GNHF_SLEEP_INHIBITED: "1",
-          GNHF_SLEEP_REEXEC_READY_PATH: victimPath,
+          ANIMO_SLEEP_INHIBITED: "1",
+          ANIMO_SLEEP_REEXEC_READY_PATH: victimPath,
         },
         platform: "linux",
       });
@@ -322,7 +322,7 @@ describe("startSleepPrevention", () => {
 
     const child = createChildProcess();
     mockSpawn.mockImplementation((_, __, options) => {
-      const readyPath = options?.env?.GNHF_SLEEP_REEXEC_READY_PATH;
+      const readyPath = options?.env?.ANIMO_SLEEP_REEXEC_READY_PATH;
 
       expect(readyPath).toEqual(expect.any(String));
 
@@ -360,7 +360,7 @@ describe("startSleepPrevention", () => {
 
     const child = createChildProcess();
     mockSpawn.mockImplementation((_, __, options) => {
-      const readyPath = options?.env?.GNHF_SLEEP_REEXEC_READY_PATH;
+      const readyPath = options?.env?.ANIMO_SLEEP_REEXEC_READY_PATH;
 
       expect(readyPath).toEqual(expect.any(String));
 
@@ -405,7 +405,7 @@ describe("startSleepPrevention", () => {
     });
     const processOff = vi.fn(() => process);
     mockSpawn.mockImplementation((_, __, options) => {
-      const readyPath = options?.env?.GNHF_SLEEP_REEXEC_READY_PATH;
+      const readyPath = options?.env?.ANIMO_SLEEP_REEXEC_READY_PATH;
 
       queueMicrotask(() => {
         child.emit("spawn");

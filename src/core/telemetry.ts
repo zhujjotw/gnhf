@@ -1,23 +1,23 @@
 /**
- * Anonymous usage telemetry for gnhf, sent to a self-hosted Umami instance.
+ * Anonymous usage telemetry for animo, sent to a self-hosted Umami instance.
  *
  * The wire format mirrors no-mistakes' telemetry: POST /api/send with
  * { type: "event", payload: { website, hostname, title, url, name, data,
- * timestamp } }. Events use a synthetic "app://gnhf/<event>" URL so Umami
+ * timestamp } }. Events use a synthetic "app://animo/<event>" URL so Umami
  * treats CLI events as distinct pages.
  *
- * Layering (highest wins): GNHF_TELEMETRY=0|false|off opt-out, then
- * GNHF_UMAMI_HOST/GNHF_UMAMI_WEBSITE_ID env vars, then build-time defaults
+ * Layering (highest wins): ANIMO_TELEMETRY=0|false|off opt-out, then
+ * ANIMO_UMAMI_HOST/ANIMO_UMAMI_WEBSITE_ID env vars, then build-time defaults
  * injected via tsdown's `define`, then a hard-coded host fallback.
  */
 
-declare const __GNHF_UMAMI_HOST__: string;
-declare const __GNHF_UMAMI_WEBSITE_ID__: string;
+declare const __ANIMO_UMAMI_HOST__: string;
+declare const __ANIMO_UMAMI_WEBSITE_ID__: string;
 
 const HARDCODED_FALLBACK_HOST = "https://a.kunchenguid.com";
 const UMAMI_PATH = "/api/send";
 const DEFAULT_HOSTNAME = "cli";
-const DEFAULT_TITLE = "gnhf CLI";
+const DEFAULT_TITLE = "animo CLI";
 const DEFAULT_REQUEST_TIMEOUT_MS = 1_000;
 
 export type TelemetryFields = Record<string, unknown>;
@@ -55,20 +55,20 @@ interface ResolveInput {
 export function resolveTelemetryConfig(
   input: ResolveInput,
 ): ResolvedTelemetryConfig {
-  const optOut = (input.env.GNHF_TELEMETRY ?? "").trim().toLowerCase();
+  const optOut = (input.env.ANIMO_TELEMETRY ?? "").trim().toLowerCase();
   if (optOut === "0" || optOut === "false" || optOut === "off") {
     return { enabled: false, host: "", websiteID: "" };
   }
 
   const websiteID =
-    (input.env.GNHF_UMAMI_WEBSITE_ID ?? "").trim() ||
+    (input.env.ANIMO_UMAMI_WEBSITE_ID ?? "").trim() ||
     input.buildWebsiteID.trim();
   if (!websiteID) {
     return { enabled: false, host: "", websiteID: "" };
   }
 
   const host =
-    (input.env.GNHF_UMAMI_HOST ?? "").trim() ||
+    (input.env.ANIMO_UMAMI_HOST ?? "").trim() ||
     input.buildHost.trim() ||
     HARDCODED_FALLBACK_HOST;
 
@@ -76,12 +76,12 @@ export function resolveTelemetryConfig(
 }
 
 export function getBuildTimeUmamiHost(): string {
-  return typeof __GNHF_UMAMI_HOST__ === "string" ? __GNHF_UMAMI_HOST__ : "";
+  return typeof __ANIMO_UMAMI_HOST__ === "string" ? __ANIMO_UMAMI_HOST__ : "";
 }
 
 export function getBuildTimeUmamiWebsiteID(): string {
-  return typeof __GNHF_UMAMI_WEBSITE_ID__ === "string"
-    ? __GNHF_UMAMI_WEBSITE_ID__
+  return typeof __ANIMO_UMAMI_WEBSITE_ID__ === "string"
+    ? __ANIMO_UMAMI_WEBSITE_ID__
     : "";
 }
 

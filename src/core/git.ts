@@ -58,7 +58,7 @@ export class CommitFailedError extends Error {
 // user- or agent-provided input.
 //
 // Always inject GIT_TERMINAL_PROMPT=0 so a misconfigured credential helper
-// or an HTTPS auth challenge can't hang a long-running gnhf loop on a
+// or an HTTPS auth challenge can't hang a long-running animo loop on a
 // terminal prompt. GPG signing is a separate prompt pathway (pinentry) and
 // is disabled where it matters via `-c commit.gpgsign=false` at the call
 // site (see commitAll), since GIT_TERMINAL_PROMPT does not cover it.
@@ -141,8 +141,8 @@ export function findLegacyRunBaseCommit(
       })
       .find(
         ({ subject }) =>
-          subject === `gnhf: initialize run ${runId}` ||
-          subject === `gnhf: overwrite run ${runId}`,
+          subject === `animo: initialize run ${runId}` ||
+          subject === `animo: overwrite run ${runId}`,
       );
 
     if (!marker?.sha) return null;
@@ -155,7 +155,7 @@ export function findLegacyRunBaseCommit(
 export function getBranchCommitCount(baseCommit: string, cwd: string): number {
   if (!baseCommit) return 0;
 
-  // Intentionally count from the branch base commit instead of gnhf marker
+  // Intentionally count from the branch base commit instead of animo marker
   // commits so the number reflects "work unique to this branch" and does not
   // depend on ignored run metadata producing a commit.
   return Number.parseInt(
@@ -237,7 +237,7 @@ export function getBranchDiffStats(
 
 export function commitAll(message: string, cwd: string): void {
   // -c commit.gpgsign=false / tag.gpgsign=false: a user with global
-  // signing enabled would otherwise have every gnhf iteration spawn gpg
+  // signing enabled would otherwise have every animo iteration spawn gpg
   // and (for a locked agent) wait on a pinentry passphrase prompt that
   // never arrives in the alt-screen TUI.
   const commitArgs = [

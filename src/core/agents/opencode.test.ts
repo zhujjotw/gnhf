@@ -213,7 +213,7 @@ describe("OpenCodeAgent", () => {
     vi.clearAllMocks();
     fetchMock = vi.fn();
     getPort = vi.fn().mockResolvedValue(8765);
-    tempDir = mkdtempSync(join(tmpdir(), "gnhf-opencode-test-"));
+    tempDir = mkdtempSync(join(tmpdir(), "animo-opencode-test-"));
     originalServerUsername = process.env.OPENCODE_SERVER_USERNAME;
     originalServerPassword = process.env.OPENCODE_SERVER_PASSWORD;
     agent = new OpenCodeAgent({

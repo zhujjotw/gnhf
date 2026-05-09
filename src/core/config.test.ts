@@ -20,7 +20,7 @@ const mockReadFileSync = vi.mocked(readFileSync);
 const mockWriteFileSync = vi.mocked(writeFileSync);
 
 const HOME = "/mock-home";
-const CONFIG_DIR = join(HOME, ".gnhf");
+const CONFIG_DIR = join(HOME, ".animo");
 const CONFIG_PATH = join(CONFIG_DIR, "config.yml");
 const BOOTSTRAP_CONFIG_TEMPLATE = (agent: string) =>
   [
@@ -65,7 +65,7 @@ const BOOTSTRAP_CONFIG_TEMPLATE = (agent: string) =>
     '#   staging: "node /opt/staging/agent.mjs"',
     "",
     "# Commit message convention (optional)",
-    "# Defaults to: gnhf <iteration>: <summary>",
+    "# Defaults to: animo <iteration>: <summary>",
     "# Use Conventional Commits semantic-release headers:",
     "# commitMessage:",
     "#   preset: conventional",
@@ -213,7 +213,7 @@ describe("loadConfig", () => {
     });
   });
 
-  it("reads config from ~/.gnhf/config.yml", () => {
+  it("reads config from ~/.animo/config.yml", () => {
     mockReadFileSync.mockReturnValue("agent: codex\n");
 
     const config = loadConfig();
@@ -468,7 +468,7 @@ describe("loadConfig", () => {
     );
 
     expect(() => loadConfig()).toThrow(
-      /agentArgsOverride\.pi\[0\].*managed by gnhf/,
+      /agentArgsOverride\.pi\[0\].*managed by animo/,
     );
   });
 

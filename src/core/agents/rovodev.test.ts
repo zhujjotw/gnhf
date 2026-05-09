@@ -62,7 +62,7 @@ describe("RovoDevAgent", () => {
     vi.clearAllMocks();
     fetchMock = vi.fn();
     getPort = vi.fn().mockResolvedValue(8765);
-    schemaDir = mkdtempSync(join(tmpdir(), "gnhf-rovodev-test-"));
+    schemaDir = mkdtempSync(join(tmpdir(), "animo-rovodev-test-"));
     schemaPath = join(schemaDir, "output-schema.json");
     writeFileSync(
       schemaPath,
@@ -102,7 +102,7 @@ describe("RovoDevAgent", () => {
       .mockResolvedValueOnce(
         jsonResponse({
           session_id: "session-123",
-          title: "gnhf",
+          title: "animo",
           message: "Session created successfully",
         }),
       )
@@ -418,7 +418,7 @@ describe("RovoDevAgent", () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse({ status: "healthy" }))
       .mockResolvedValueOnce(
-        jsonResponse({ session_id: "session-123", title: "gnhf" }),
+        jsonResponse({ session_id: "session-123", title: "animo" }),
       )
       .mockResolvedValueOnce(jsonResponse({ message: "ok", prompt_set: true }))
       .mockResolvedValueOnce(jsonResponse({ response: "Chat message set" }))
@@ -448,7 +448,7 @@ describe("RovoDevAgent", () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse({ status: "healthy" }))
       .mockResolvedValueOnce(
-        jsonResponse({ session_id: "session-123", title: "gnhf" }),
+        jsonResponse({ session_id: "session-123", title: "animo" }),
       )
       .mockResolvedValueOnce(jsonResponse({ message: "ok", prompt_set: true }))
       .mockResolvedValueOnce(jsonResponse({ response: "Chat message set" }))
@@ -481,7 +481,7 @@ describe("RovoDevAgent", () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse({ status: "healthy" }))
       .mockResolvedValueOnce(
-        jsonResponse({ session_id: "session-123", title: "gnhf" }),
+        jsonResponse({ session_id: "session-123", title: "animo" }),
       )
       .mockResolvedValueOnce(jsonResponse({ message: "ok", prompt_set: true }))
       .mockResolvedValueOnce(jsonResponse({ response: "Chat message set" }))
@@ -515,7 +515,7 @@ describe("RovoDevAgent", () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse({ status: "healthy" }))
       .mockResolvedValueOnce(
-        jsonResponse({ session_id: "session-123", title: "gnhf" }),
+        jsonResponse({ session_id: "session-123", title: "animo" }),
       )
       .mockResolvedValueOnce(jsonResponse({ message: "ok", prompt_set: true }))
       .mockResolvedValueOnce(jsonResponse({ response: "Chat message set" }))
@@ -572,7 +572,7 @@ describe("RovoDevAgent", () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse({ status: "healthy" }))
       .mockResolvedValueOnce(
-        jsonResponse({ session_id: "session-123", title: "gnhf" }),
+        jsonResponse({ session_id: "session-123", title: "animo" }),
       )
       .mockResolvedValueOnce(jsonResponse({ message: "ok", prompt_set: true }))
       .mockResolvedValueOnce(jsonResponse({ response: "Chat message set" }))
@@ -618,7 +618,7 @@ describe("RovoDevAgent", () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse({ status: "healthy" }))
       .mockResolvedValueOnce(
-        jsonResponse({ session_id: "session-123", title: "gnhf" }),
+        jsonResponse({ session_id: "session-123", title: "animo" }),
       )
       .mockResolvedValueOnce(jsonResponse({ message: "ok", prompt_set: true }))
       .mockResolvedValueOnce(jsonResponse({ response: "Chat message set" }))
@@ -689,7 +689,7 @@ describe("RovoDevAgent", () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse({ status: "healthy" }))
       .mockResolvedValueOnce(
-        jsonResponse({ session_id: "session-123", title: "gnhf" }),
+        jsonResponse({ session_id: "session-123", title: "animo" }),
       )
       .mockResolvedValueOnce(jsonResponse({ message: "ok", prompt_set: true }))
       .mockResolvedValueOnce(jsonResponse({ response: "Chat message set" }))

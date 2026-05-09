@@ -1,4 +1,4 @@
-export type PetPhase = "egg" | "crack" | "hatch" | "idle";
+export type PetPhase = "egg" | "shake1" | "shake2" | "crack" | "hatch" | "idle";
 
 export interface TerminalPet {
   id: string;
@@ -16,12 +16,42 @@ const PETS = [
     id: "duck",
     name: "Duck",
     frames: {
-      egg: ["  __  ", " /  \\ ", " \\__/ "],
-      crack: ["  __  ", " /\\/\\ ", " \\__/ "],
-      hatch: ["  __  ", " (o ) ", " /|_| "],
+      egg: [
+        "    ____    ",
+        "   /    \\   ",
+        "  |      |  ",
+        "  |      |  ",
+        "   \\____/   ",
+      ],
+      crack: [
+        "    ____    ",
+        "   / /\\ \\   ",
+        "  | /  \\ |  ",
+        "  |/    \\|  ",
+        "   \\____/   ",
+      ],
+      hatch: [
+        "     __     ",
+        "   >(o )    ",
+        "    /|_|    ",
+        "   / / \\    ",
+        "  (__/ \\_)  ",
+      ],
       idle: [
-        ["  __  ", ">(o ) ", " /|_| "],
-        ["  __  ", ">(- ) ", " /|_| "],
+        [
+          "     __     ",
+          "   >(o )    ",
+          "    /|_|    ",
+          "   / / \\    ",
+          "  (__/ \\_)  ",
+        ],
+        [
+          "     __     ",
+          "   >(- )    ",
+          "    /|_|    ",
+          "   / / \\    ",
+          "  (__/ \\_)  ",
+        ],
       ],
     },
   },
@@ -29,12 +59,42 @@ const PETS = [
     id: "cat",
     name: "Cat",
     frames: {
-      egg: ["  __  ", " /  \\ ", " \\__/ "],
-      crack: ["  __  ", " /\\/\\ ", " \\__/ "],
-      hatch: [" /\\_/\\", "( o.o)", " > ^ <"],
+      egg: [
+        "    ____    ",
+        "   /    \\   ",
+        "  |      |  ",
+        "  |      |  ",
+        "   \\____/   ",
+      ],
+      crack: [
+        "    ____    ",
+        "   / /\\ \\   ",
+        "  | /  \\ |  ",
+        "  |/    \\|  ",
+        "   \\____/   ",
+      ],
+      hatch: [
+        "   /\\_/\\    ",
+        "  / o.o \\   ",
+        " (  > <  )  ",
+        "  \\_____/   ",
+        "   |   |    ",
+      ],
       idle: [
-        [" /\\_/\\", "( o.o)", " > ^ <"],
-        [" /\\_/\\", "( -.-)", " > ^ <"],
+        [
+          "   /\\_/\\    ",
+          "  / o.o \\   ",
+          " (  > <  )  ",
+          "  \\_____/   ",
+          "   |   |    ",
+        ],
+        [
+          "   /\\_/\\    ",
+          "  / -.- \\   ",
+          " (  > <  )  ",
+          "  \\_____/   ",
+          "   |   |    ",
+        ],
       ],
     },
   },
@@ -42,12 +102,42 @@ const PETS = [
     id: "robot",
     name: "Robot",
     frames: {
-      egg: ["  __  ", " /  \\ ", " \\__/ "],
-      crack: ["  __  ", " /\\/\\ ", " \\__/ "],
-      hatch: [" [o_o]", " /|_|\\", "  / \\ "],
+      egg: [
+        "    ____    ",
+        "   /    \\   ",
+        "  |      |  ",
+        "  |      |  ",
+        "   \\____/   ",
+      ],
+      crack: [
+        "    ____    ",
+        "   / /\\ \\   ",
+        "  | /  \\ |  ",
+        "  |/    \\|  ",
+        "   \\____/   ",
+      ],
+      hatch: [
+        "   [o_o]    ",
+        "  /|====|\\  ",
+        "   |    |   ",
+        "   |____|   ",
+        "   /    \\   ",
+      ],
       idle: [
-        [" [o_o]", " /|_|\\", "  / \\ "],
-        [" [^_^]", " /|_|\\", "  / \\ "],
+        [
+          "   [o_o]    ",
+          "  /|====|\\  ",
+          "   |    |   ",
+          "   |____|   ",
+          "   /    \\   ",
+        ],
+        [
+          "   [^_^]    ",
+          "  /|====|\\  ",
+          "   |    |   ",
+          "   |____|   ",
+          "   /    \\   ",
+        ],
       ],
     },
   },
@@ -55,64 +145,42 @@ const PETS = [
     id: "owl",
     name: "Owl",
     frames: {
-      egg: ["  __  ", " /  \\ ", " \\__/ "],
-      crack: ["  __  ", " /\\/\\ ", " \\__/ "],
-      hatch: [" (o,o)", " {   }", "  v v "],
-      idle: [
-        [" (o,o)", " {   }", "  v v "],
-        [" (-,-)", " {   }", "  v v "],
+      egg: [
+        "    ____    ",
+        "   /    \\   ",
+        "  |      |  ",
+        "  |      |  ",
+        "   \\____/   ",
       ],
-    },
-  },
-  {
-    id: "turtle",
-    name: "Turtle",
-    frames: {
-      egg: ["  __  ", " /  \\ ", " \\__/ "],
-      crack: ["  __  ", " /\\/\\ ", " \\__/ "],
-      hatch: ["  __  ", " /oo\\_", " \\__/ "],
-      idle: [
-        ["  __  ", " /oo\\_", " \\__/ "],
-        ["  __  ", " /--\\_", " \\__/ "],
+      crack: [
+        "    ____    ",
+        "   / /\\ \\   ",
+        "  | /  \\ |  ",
+        "  |/    \\|  ",
+        "   \\____/   ",
       ],
-    },
-  },
-  {
-    id: "ghost",
-    name: "Ghost",
-    frames: {
-      egg: ["  __  ", " /  \\ ", " \\__/ "],
-      crack: ["  __  ", " /\\/\\ ", " \\__/ "],
-      hatch: [" .-.", "(o o)", "| O \\"],
-      idle: [
-        [" .-.", "(o o)", "| O \\"],
-        [" .-.", "(- -)", "| O \\"],
+      hatch: [
+        "   (o,o)    ",
+        "  /{    }\\  ",
+        "  | {  } |  ",
+        "   \\{__}/   ",
+        "    v  v    ",
       ],
-    },
-  },
-  {
-    id: "cactus",
-    name: "Cactus",
-    frames: {
-      egg: ["  __  ", " /  \\ ", " \\__/ "],
-      crack: ["  __  ", " /\\/\\ ", " \\__/ "],
-      hatch: [" \\|/ ", "- o -", " /|\\ "],
       idle: [
-        [" \\|/ ", "- o -", " /|\\ "],
-        ["  |\\ ", "- o -", " /|  "],
-      ],
-    },
-  },
-  {
-    id: "mushroom",
-    name: "Mushroom",
-    frames: {
-      egg: ["  __  ", " /  \\ ", " \\__/ "],
-      crack: ["  __  ", " /\\/\\ ", " \\__/ "],
-      hatch: [" .---.", "( o o)", "  |_| "],
-      idle: [
-        [" .---.", "( o o)", "  |_| "],
-        [" .---.", "( - -)", "  |_| "],
+        [
+          "   (o,o)    ",
+          "  /{    }\\  ",
+          "  | {  } |  ",
+          "   \\{__}/   ",
+          "    v  v    ",
+        ],
+        [
+          "   (-,-)    ",
+          "  /{    }\\  ",
+          "  | {  } |  ",
+          "   \\{__}/   ",
+          "    v  v    ",
+        ],
       ],
     },
   },
@@ -120,12 +188,42 @@ const PETS = [
     id: "penguin",
     name: "Penguin",
     frames: {
-      egg: ["  __  ", " /  \\ ", " \\__/ "],
-      crack: ["  __  ", " /\\/\\ ", " \\__/ "],
-      hatch: [" (o_o)", " /|_|\\", "  / \\ "],
+      egg: [
+        "    ____    ",
+        "   /    \\   ",
+        "  |      |  ",
+        "  |      |  ",
+        "   \\____/   ",
+      ],
+      crack: [
+        "    ____    ",
+        "   / /\\ \\   ",
+        "  | /  \\ |  ",
+        "  |/    \\|  ",
+        "   \\____/   ",
+      ],
+      hatch: [
+        "    (o_o)   ",
+        "   /|    |  ",
+        "  / |    |  ",
+        "  \\_|____|  ",
+        "    /    \\  ",
+      ],
       idle: [
-        [" (o_o)", " /|_|\\", "  / \\ "],
-        [" (-_-)", " /|_|\\", "  / \\ "],
+        [
+          "    (o_o)   ",
+          "   /|    |  ",
+          "  / |    |  ",
+          "  \\_|____|  ",
+          "    /    \\  ",
+        ],
+        [
+          "    (-_-)   ",
+          "   /|    |  ",
+          "  / |    |  ",
+          "  \\_|____|  ",
+          "    /    \\  ",
+        ],
       ],
     },
   },
@@ -133,16 +231,52 @@ const PETS = [
     id: "dragon",
     name: "Dragon",
     frames: {
-      egg: ["  __  ", " /  \\ ", " \\__/ "],
-      crack: ["  __  ", " /\\/\\ ", " \\__/ "],
-      hatch: [" /\\_/\\", "( o>)", " /^^\\"],
+      egg: [
+        "    ____    ",
+        "   /    \\   ",
+        "  |      |  ",
+        "  |      |  ",
+        "   \\____/   ",
+      ],
+      crack: [
+        "    ____    ",
+        "   / /\\ \\   ",
+        "  | /  \\ |  ",
+        "  |/    \\|  ",
+        "   \\____/   ",
+      ],
+      hatch: [
+        "   /\\_/\\    ",
+        "  ( o> )    ",
+        "  /|^^|\\    ",
+        " / |  | \\   ",
+        "(__/  \\__)  ",
+      ],
       idle: [
-        [" /\\_/\\", "( o>)", " /^^\\"],
-        [" /\\_/\\", "( ^>)", " /^^\\"],
+        [
+          "   /\\_/\\    ",
+          "  ( o> )    ",
+          "  /|^^|\\    ",
+          " / |  | \\   ",
+          "(__/  \\__)  ",
+        ],
+        [
+          "   /\\_/\\    ",
+          "  ( ^> )    ",
+          "  /|^^|\\    ",
+          " / |  | \\   ",
+          "(__/  \\__)  ",
+        ],
       ],
     },
   },
 ] as const satisfies readonly TerminalPet[];
+
+const HATCH_SPARKLES = [
+  ["  *   . *   ", "    . * .   ", " *    .  *  ", "  .  *   .  ", "   *  . *   "],
+  [" .  *    .  ", "   *  . *   ", "  .   *  .  ", " *  .   *   ", "    .  *    "],
+  ["   .  *  .  ", " *   .  *   ", "    *  .    ", "  .  *  .   ", " *    .  *  "],
+] as const;
 
 export function selectTerminalPet(seed = Math.random()): TerminalPet {
   const normalized = Number.isFinite(seed) ? Math.abs(seed) % 1 : 0;
@@ -150,17 +284,70 @@ export function selectTerminalPet(seed = Math.random()): TerminalPet {
 }
 
 export function getPetPhase(elapsedMs: number): PetPhase {
-  if (elapsedMs < 1_500) return "egg";
-  if (elapsedMs < 3_000) return "crack";
-  if (elapsedMs < 4_500) return "hatch";
+  if (elapsedMs < 1_200) return "egg";
+  if (elapsedMs < 2_000) return "shake1";
+  if (elapsedMs < 2_800) return "shake2";
+  if (elapsedMs < 4_000) return "crack";
+  if (elapsedMs < 5_500) return "hatch";
   return "idle";
 }
 
 export function renderPetFrame(pet: TerminalPet, elapsedMs: number): string[] {
   const phase = getPetPhase(elapsedMs);
-  if (phase !== "idle") return pet.frames[phase];
+
+  if (phase === "egg") {
+    return pet.frames.egg;
+  }
+
+  if (phase === "shake1" || phase === "shake2") {
+    const shakeOffset = Math.floor(elapsedMs / 150) % 3;
+    const base = pet.frames.egg;
+    if (shakeOffset === 1) {
+      return base.map((line) => " " + line.slice(0, -1));
+    }
+    if (shakeOffset === 2) {
+      return base.map((line) => line.slice(1) + " ");
+    }
+    return base;
+  }
+
+  if (phase === "crack") {
+    const sparkleIdx = Math.floor(elapsedMs / 300) % HATCH_SPARKLES.length;
+    const sparkle = HATCH_SPARKLES[sparkleIdx]!;
+    const crack = pet.frames.crack;
+    return crack.map((line, i) => {
+      const sp = sparkle[i] ?? "";
+      const merged = line
+        .split("")
+        .map((ch, ci) => {
+          const spCh = sp[ci];
+          if (spCh && spCh !== " " && ch === " ") return spCh;
+          return ch;
+        })
+        .join("");
+      return merged;
+    });
+  }
+
+  if (phase === "hatch") {
+    const sparkleIdx = Math.floor(elapsedMs / 200) % HATCH_SPARKLES.length;
+    const sparkle = HATCH_SPARKLES[sparkleIdx]!;
+    const hatch = pet.frames.hatch;
+    return hatch.map((line, i) => {
+      const sp = sparkle[i] ?? "";
+      const merged = line
+        .split("")
+        .map((ch, ci) => {
+          const spCh = sp[ci];
+          if (spCh && spCh !== " " && ch === " ") return spCh;
+          return ch;
+        })
+        .join("");
+      return merged;
+    });
+  }
 
   const frames = pet.frames.idle;
   const index = Math.floor(elapsedMs / 800) % frames.length;
-  return frames[index]!;
+  return [...frames[index]!];
 }

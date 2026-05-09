@@ -628,7 +628,7 @@ export class Orchestrator extends EventEmitter<OrchestratorEvents> {
 
 ## Previous Commit Failure
 
-The previous iteration made workspace changes, but gnhf could not commit them because git commit failed.
+The previous iteration made workspace changes, but animo could not commit them because git commit failed.
 Do not start unrelated work.
 Inspect and fix the existing uncommitted changes so the commit can pass, then report success.
 

@@ -3,7 +3,7 @@ import { renderExitSummary, stripExitSummaryAnsi } from "./exit-summary.js";
 
 const baseSummary = {
   agentName: "opencode",
-  branchName: "gnhf/refactor-auth-flow",
+  branchName: "animo/refactor-auth-flow",
   elapsedMs: 47 * 60_000 + 12_000,
   status: "stopped" as const,
   iterations: 8,
@@ -13,8 +13,8 @@ const baseSummary = {
   totalOutputTokens: 96_100,
   tokensEstimated: false,
   commitCount: 6,
-  notesPath: ".gnhf/runs/refactor-auth-flow/notes.md",
-  logPath: ".gnhf/runs/refactor-auth-flow/gnhf.log",
+  notesPath: ".animo/runs/refactor-auth-flow/notes.md",
+  logPath: ".animo/runs/refactor-auth-flow/animo.log",
   baseRef: "main",
   diffStats: {
     commits: 6,
@@ -35,9 +35,9 @@ describe("renderExitSummary", () => {
       renderExitSummary({ ...baseSummary, color: false }),
     );
 
-    expect(summary).toContain("✦ gnhf wrapped");
+    expect(summary).toContain("✦ animo wrapped");
     expect(summary).toContain(
-      "opencode worked for 47m 12s on gnhf/refactor-auth-flow",
+      "opencode worked for 47m 12s on animo/refactor-auth-flow",
     );
     expect(summary).toContain(
       "iterations      8 total       6 good       2 failed",
@@ -78,7 +78,7 @@ describe("renderExitSummary", () => {
       }),
     );
 
-    expect(summary).toContain("× gnhf stopped");
+    expect(summary).toContain("× animo stopped");
     expect(summary).toContain(
       "opencode ran for 47m 12s before: 3 consecutive failures",
     );
@@ -112,7 +112,7 @@ describe("renderExitSummary", () => {
       renderExitSummary({
         ...baseSummary,
         branchName:
-          "gnhf/add-responsive-exit-summary-for-extremely-long-branch-names",
+          "animo/add-responsive-exit-summary-for-extremely-long-branch-names",
         color: false,
         terminalColumns: 100,
       }),
@@ -134,7 +134,7 @@ describe("renderExitSummary", () => {
       renderExitSummary({
         ...baseSummary,
         branchName:
-          "gnhf/add-responsive-exit-summary-for-extremely-long-branch-names",
+          "animo/add-responsive-exit-summary-for-extremely-long-branch-names",
         color: false,
         terminalColumns: 50,
       }),
@@ -157,7 +157,7 @@ describe("renderExitSummary", () => {
     const summary = renderExitSummary({
       ...baseSummary,
       branchName:
-        "gnhf/add-responsive-exit-summary-for-extremely-long-branch-names",
+        "animo/add-responsive-exit-summary-for-extremely-long-branch-names",
       color: true,
       terminalColumns: 50,
     });

@@ -166,8 +166,8 @@ export function renderExitSummary(options: ExitSummaryOptions): string {
   const elapsed = formatDuration(options.elapsedMs);
   const stopped = options.status === "aborted";
   const title = stopped
-    ? `${s.red("×")} ${s.bold("gnhf stopped")}`
-    : `${s.cyan("✦")} ${s.bold("gnhf wrapped")}`;
+    ? `${s.red("×")} ${s.bold("animo stopped")}`
+    : `${s.cyan("✦")} ${s.bold("animo wrapped")}`;
   const subtitle = stopped
     ? `${s.cyan(options.agentName)} ran for ${s.yellow(elapsed)} before: ${options.abortReason ?? options.status}`
     : `${s.cyan(options.agentName)} worked for ${s.yellow(elapsed)} on ${s.magenta(options.branchName)}`;

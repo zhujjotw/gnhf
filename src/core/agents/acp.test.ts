@@ -160,10 +160,10 @@ describe("AcpAgent", () => {
   });
 
   it("redacts raw command targets in debug logs", async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-acp-test-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-acp-test-"));
     try {
       resetDebugLogForTests();
-      const logPath = join(tempDir, "gnhf.log");
+      const logPath = join(tempDir, "animo.log");
       initDebugLog(logPath);
       const rawTarget = "./bin/dev-acp --profile ci --token secret";
       const { runtime } = createFakeRuntime([
@@ -188,10 +188,10 @@ describe("AcpAgent", () => {
   });
 
   it("redacts raw command targets inside serialized ACP stream errors", async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-acp-test-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-acp-test-"));
     try {
       resetDebugLogForTests();
-      const logPath = join(tempDir, "gnhf.log");
+      const logPath = join(tempDir, "animo.log");
       initDebugLog(logPath);
       const rawTarget = "./bin/dev-acp --profile ci --token secret";
       const streamError = new Error(`failed to start ${rawTarget}`, {
@@ -226,10 +226,10 @@ describe("AcpAgent", () => {
   });
 
   it("redacts raw command targets when ACP startup throws before streaming", async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-acp-test-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-acp-test-"));
     try {
       resetDebugLogForTests();
-      const logPath = join(tempDir, "gnhf.log");
+      const logPath = join(tempDir, "animo.log");
       initDebugLog(logPath);
       const rawTarget = "./bin/dev-acp --profile ci --token secret";
       const startError = new Error(`spawn failed for ${rawTarget}`);

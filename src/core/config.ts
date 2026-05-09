@@ -195,7 +195,7 @@ function isReservedAgentArg(agent: AgentName, arg: string): boolean {
 }
 
 /**
- * Resolve a user-supplied path against the config directory (~/.gnhf).
+ * Resolve a user-supplied path against the config directory (~/.animo).
  * Expands leading `~` or `~/` to the home directory, then resolves relative
  * paths against `baseDir` so that entries like `./bin/codex` work predictably
  * regardless of the repo's cwd. Bare executable names and absolute paths pass
@@ -286,7 +286,7 @@ function normalizeAgentExtraArgs(
 
     if (isReservedAgentArg(agent, trimmed)) {
       throw new InvalidConfigError(
-        `Invalid config value for ${label}[${index}]: "${trimmed}" is managed by gnhf and cannot be overridden`,
+        `Invalid config value for ${label}[${index}]: "${trimmed}" is managed by animo and cannot be overridden`,
       );
     }
 
@@ -388,7 +388,7 @@ function normalizeConfig(
     "agentPathOverride",
   );
   if (hasAgentPathOverride) {
-    const resolveDir = configDir ?? join(homedir(), ".gnhf");
+    const resolveDir = configDir ?? join(homedir(), ".animo");
     const agentPathOverride = normalizeAgentPathOverride(
       config.agentPathOverride,
       resolveDir,
@@ -553,7 +553,7 @@ function serializeConfig(config: Config): string {
     '#   staging: "node /opt/staging/agent.mjs"',
     "",
     "# Commit message convention (optional)",
-    "# Defaults to: gnhf <iteration>: <summary>",
+    "# Defaults to: animo <iteration>: <summary>",
     "# Use Conventional Commits semantic-release headers:",
     "# commitMessage:",
     "#   preset: conventional",
@@ -581,7 +581,7 @@ function serializeConfig(config: Config): string {
 }
 
 export function loadConfig(overrides?: Partial<Config>): Config {
-  const configDir = join(homedir(), ".gnhf");
+  const configDir = join(homedir(), ".animo");
   const configPath = join(configDir, "config.yml");
   let fileConfig: Partial<Config> = {};
   let shouldBootstrapConfig = false;

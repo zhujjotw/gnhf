@@ -2,6 +2,15 @@ import { EventEmitter } from "node:events";
 import { describe, it, expect, vi } from "vitest";
 import * as renderer from "./renderer.js";
 import {
+  generateMarioBackground,
+  renderMarioRow,
+} from "./utils/bg-mario.js";
+import {
+  generateTetrisBackground,
+  renderTetrisRow,
+} from "./utils/bg-tetris.js";
+import { selectBackgroundTheme } from "./utils/bg-theme.js";
+import {
   Renderer,
   stripAnsi,
   renderTitle,
@@ -16,13 +25,12 @@ import {
   buildContentCells,
   generateSideMeteorShower,
 } from "./renderer.js";
-import { rowToString } from "./renderer-diff.js";
+import { rowToString, emptyCells } from "./renderer-diff.js";
 import type {
   IterationRecord,
   Orchestrator,
   OrchestratorState,
 } from "./core/orchestrator.js";
-import { selectTerminalPet } from "./utils/pet.js";
 
 function createIteration(
   overrides: Partial<IterationRecord> = {},
@@ -39,33 +47,28 @@ function createIteration(
 }
 
 describe("renderTitle", () => {
-  it("renders the gnhf eyebrow above the ASCII art", () => {
+  it("renders the animo eyebrow", () => {
     const lines = renderTitle().map(stripAnsi);
-    const eyebrowIdx = lines.findIndex((l) => l.includes("g n h f"));
-    const artIdx = lines.findIndex((l) => l.includes("┏━╸┏━┓"));
+    const eyebrowIdx = lines.findIndex((l) => l.includes("a n i m o"));
     expect(eyebrowIdx).toBeGreaterThanOrEqual(0);
-    expect(artIdx).toBeGreaterThan(eyebrowIdx);
   });
 
   it("renders the agent name in the eyebrow", () => {
     const lines = renderTitle("rovodev").map(stripAnsi);
-    expect(lines[0]).toContain("g n h f");
+    expect(lines[0]).toContain("a n i m o");
     expect(lines[0]).toContain("·");
     expect(lines[0]).toContain("r o v o d e v");
   });
 
   it("renders an acp:<target> spec as two dot-separated segments", () => {
     const lines = renderTitle("acp:claude").map(stripAnsi);
-    expect(lines[0]).toContain("g n h f  ·  a c p  ·  c l a u d e");
-    // The colon should not appear as a letter-spaced character.
+    expect(lines[0]).toContain("a n i m o  ·  a c p  ·  c l a u d e");
     expect(lines[0]).not.toContain("a c p :");
   });
 
-  it("renders all three lines of ASCII art", () => {
+  it("does not include the old GOOD NIGHT HAVE FUN art", () => {
     const plain = renderTitle().map(stripAnsi).join("\n");
-    expect(plain).toContain("┏━╸┏━┓┏━┓╺┳┓");
-    expect(plain).toContain("┃╺┓┃ ┃┃ ┃ ┃┃");
-    expect(plain).toContain("┗━┛┗━┛┗━┛╺┻┛");
+    expect(plain).not.toContain("┏━╸┏━┓┏━┓╺┳┓");
   });
 });
 
@@ -205,13 +208,13 @@ describe("modern quote rendering", () => {
     expect(selectModernQuote(0.99).author).toBe("Steve Jobs");
   });
 
-  it("renders the quote and author as dim cells", () => {
+  it("renders the quote as box-font art with author attribution", () => {
     const rows = renderModernQuoteCells(selectModernQuote(0));
     const text = rows.map(rowToString).map(stripAnsi).join("\n");
 
-    expect(text).toContain('"Make it work, make it right, make it fast."');
     expect(text).toContain("- Kent Beck");
-    expect(rows.flat().every((cell) => cell.style === "dim")).toBe(true);
+    // Art lines use box-drawing characters
+    expect(/[┏┗┓┛┃━┣┫╻╹╺╸┳┻]/.test(text)).toBe(true);
   });
 });
 
@@ -328,7 +331,11 @@ describe("buildFrame", () => {
       )
       .map(stripAnsi);
 
-    expect(lines.slice(11, 14).filter(Boolean)).toEqual(["A".repeat(62), "🌕"]);
+    const aIdx = lines.findIndex((l) => l.includes("A".repeat(10)));
+    expect(aIdx).toBeGreaterThanOrEqual(0);
+    expect(lines[aIdx]).toBe("A".repeat(62));
+    const nextNonEmpty = lines.slice(aIdx + 1).find((l) => l.trim().length > 0);
+    expect(nextNonEmpty?.trim()).toBe("🌕");
   });
 
   it("shows the stop and resume hint on the second-to-last row with blank bottom padding", () => {
@@ -366,7 +373,7 @@ describe("buildFrame", () => {
     const rawHintLine = lines.at(-2) ?? "";
     const hintLine = stripAnsi(rawHintLine);
 
-    expect(hintLine.trim()).toBe("[ctrl+c to stop, gnhf again to resume]");
+    expect(hintLine.trim()).toBe("[ctrl+c to stop, animo again to resume]");
     expect(rawHintLine).toContain("\x1b[2m");
     expect(stripAnsi(lines.at(-1) ?? "").trim()).toBe("");
 
@@ -409,7 +416,7 @@ describe("buildFrame", () => {
     const lines = stripCursorHome(frame).split("\n");
 
     expect(stripAnsi(lines.at(-2) ?? "").trim()).toBe(
-      "[graceful stop requested, ctrl+c again to force stop, gnhf again to resume]",
+      "[graceful stop requested, ctrl+c again to force stop, animo again to resume]",
     );
   });
 
@@ -453,7 +460,7 @@ describe("buildFrame", () => {
     expect(lines).toHaveLength(24);
     expect(moonLines).toHaveLength(3);
     expect(plainLines.at(-2)?.trim()).toBe(
-      "[graceful stop requested, ctrl+c again to force stop, gnhf again to resume]",
+      "[graceful stop requested, ctrl+c again to force stop, animo again to resume]",
     );
     expect(plainLines.at(-1)?.trim()).toBe("");
   });
@@ -563,7 +570,6 @@ describe("buildFrame", () => {
       lastMessage: "reading files",
     };
 
-    const availableHeight = 22;
     const now = state.startTime.getTime() + 60_000;
     const contentRows = buildContentCells(
       "my prompt",
@@ -571,10 +577,11 @@ describe("buildFrame", () => {
       state,
       "00:01:00",
       now,
-      availableHeight,
     )
       .map(rowToString)
-      .map(stripAnsi);
+      .map(stripAnsi)
+      .map((line) => line.trim());
+    const availableHeight = contentRows.length;
     const frame = buildFrame(
       "my prompt",
       "claude",
@@ -695,97 +702,6 @@ describe("buildFrame", () => {
     expect(text).not.toContain("╱");
   });
 
-  it("renders a hatching pet in the right margin when there is room", () => {
-    const state: OrchestratorState = {
-      status: "running",
-      gracefulStopRequested: false,
-      interruptHint: "resume",
-      currentIteration: 1,
-      totalInputTokens: 0,
-      totalOutputTokens: 0,
-      tokensEstimated: false,
-      commitCount: 0,
-      iterations: [],
-      successCount: 0,
-      failCount: 0,
-      consecutiveFailures: 0,
-      consecutiveErrors: 0,
-      startTime: new Date("2026-01-01T00:00:00Z"),
-      waitingUntil: null,
-      lastMessage: null,
-    };
-    const terminalWidth = 100;
-    const cells = buildFrameCells(
-      "ship it",
-      "claude",
-      state,
-      [],
-      [],
-      [],
-      state.startTime.getTime(),
-      terminalWidth,
-      30,
-      [],
-      [],
-      [],
-      selectModernQuote(0),
-      selectTerminalPet(0),
-    );
-    const plainLines = cells.map(rowToString).map(stripAnsi);
-    const centerStart = Math.floor((terminalWidth - 63) / 2);
-    const centerEnd = centerStart + 63;
-
-    expect(plainLines.join("\n")).toContain("/  \\");
-    for (const row of cells) {
-      expect(row).toHaveLength(terminalWidth);
-      const centerText = stripAnsi(
-        rowToString(row.slice(centerStart, centerEnd)),
-      );
-      expect(centerText).not.toContain("/  \\");
-      expect(centerText).not.toContain("\\__/");
-    }
-  });
-
-  it("hides the pet when the right margin is too narrow", () => {
-    const state: OrchestratorState = {
-      status: "running",
-      gracefulStopRequested: false,
-      interruptHint: "resume",
-      currentIteration: 1,
-      totalInputTokens: 0,
-      totalOutputTokens: 0,
-      tokensEstimated: false,
-      commitCount: 0,
-      iterations: [],
-      successCount: 0,
-      failCount: 0,
-      consecutiveFailures: 0,
-      consecutiveErrors: 0,
-      startTime: new Date("2026-01-01T00:00:00Z"),
-      waitingUntil: null,
-      lastMessage: null,
-    };
-    const cells = buildFrameCells(
-      "ship it",
-      "claude",
-      state,
-      [],
-      [],
-      [],
-      state.startTime.getTime(),
-      76,
-      30,
-      [],
-      [],
-      [],
-      selectModernQuote(0),
-      selectTerminalPet(0),
-    );
-    const text = cells.map(rowToString).map(stripAnsi).join("\n");
-
-    expect(text).not.toContain("/  \\");
-    expect(text).not.toContain("\\__/");
-  });
 });
 
 describe("renderer module exports", () => {
@@ -820,68 +736,47 @@ describe("buildContentCells adaptive height", () => {
   it("includes all sections at full height", () => {
     const rows = buildContentCells("my prompt", "claude", state, "00:01:00", 0);
     const text = toText(rows);
-    expect(text).toContain("┏━╸┏━┓");
-    expect(text).toContain("g n h f");
-    expect(text).toContain("Make it work");
+    expect(text).toContain("a n i m o");
+    expect(text).toContain("- Kent Beck");
     expect(text).toContain("my prompt");
     expect(text).toContain("reading files");
     expect(text).toContain("00:01:00");
-    expect(rows).toHaveLength(22);
+    // Art-rendered quote uses box-drawing characters
+    expect(/[┏┗┓┛┃━┣┫╻╹╺╸┳┻]/.test(text)).toBe(true);
   });
 
-  it("keeps the logo separated from both the eyebrow and prompt", () => {
+  it("keeps eyebrow above the quote art", () => {
     const lines = buildContentCells("my prompt", "claude", state, "00:01:00", 0)
       .map(rowToString)
       .map(stripAnsi);
 
-    const eyebrowIndex = lines.findIndex((line) => line.includes("g n h f"));
-    const firstArtIndex = lines.findIndex((line) => line.includes("┏━╸┏━┓"));
-    const lastArtIndex = lines.findIndex((line) => line.includes("┗━┛┗━┛"));
-    const quoteIndex = lines.findIndex((line) => line.includes("Make it work"));
+    const eyebrowIndex = lines.findIndex((line) => line.includes("a n i m o"));
+    const quoteArtIndex = lines.findIndex((line) => /[┏┗┓┛┃━┣┫╻╹╺╸┳┻]/.test(line));
     const promptIndex = lines.findIndex((line) => line.includes("my prompt"));
 
-    expect(firstArtIndex - eyebrowIndex).toBe(3);
-    expect(quoteIndex - lastArtIndex).toBe(2);
-    expect(promptIndex - quoteIndex).toBe(3);
+    expect(eyebrowIndex).toBeGreaterThanOrEqual(0);
+    expect(quoteArtIndex).toBeGreaterThan(eyebrowIndex);
+    expect(promptIndex).toBeGreaterThan(quoteArtIndex);
   });
 
-  it("hides ASCII art first when height is insufficient", () => {
+  it("hides quote art first when height is insufficient", () => {
     const rows = buildContentCells(
       "my prompt",
       "claude",
       state,
       "00:01:00",
       0,
-      21,
+      18,
     );
     const text = toText(rows);
-    expect(text).not.toContain("┏━╸┏━┓");
-    expect(text).toContain("g n h f");
-    expect(text).toContain("Make it work");
+    expect(text).not.toContain("- Kent Beck");
+    expect(text).toContain("a n i m o");
     expect(text).toContain("my prompt");
     expect(text).toContain("reading files");
-    expect(rows.length).toBeLessThanOrEqual(21);
+    expect(rows.length).toBeLessThanOrEqual(18);
   });
 
-  it("hides eyebrow after ASCII art", () => {
-    const rows = buildContentCells(
-      "my prompt",
-      "claude",
-      state,
-      "00:01:00",
-      0,
-      17,
-    );
-    const text = toText(rows);
-    expect(text).not.toContain("┏━╸┏━┓");
-    expect(text).not.toContain("g n h f");
-    expect(text).toContain("Make it work");
-    expect(text).toContain("my prompt");
-    expect(text).toContain("reading files");
-    expect(rows.length).toBeLessThanOrEqual(17);
-  });
-
-  it("hides the quote after eyebrow", () => {
+  it("hides eyebrow after quote", () => {
     const rows = buildContentCells(
       "my prompt",
       "claude",
@@ -891,32 +786,29 @@ describe("buildContentCells adaptive height", () => {
       14,
     );
     const text = toText(rows);
-    expect(text).not.toContain("┏━╸┏━┓");
-    expect(text).not.toContain("g n h f");
-    expect(text).not.toContain("Make it work");
-    expect(text).toContain("reading files");
+    expect(text).not.toContain("a n i m o");
+    expect(text).not.toContain("- Kent Beck");
     expect(text).toContain("my prompt");
-    expect(text).toContain("00:01:00");
+    expect(text).toContain("reading files");
     expect(rows.length).toBeLessThanOrEqual(14);
   });
 
-  it("hides agent text after the quote", () => {
+  it("hides agent text after eyebrow", () => {
     const rows = buildContentCells(
       "my prompt",
       "claude",
       state,
       "00:01:00",
       0,
-      12,
+      10,
     );
     const text = toText(rows);
-    expect(text).not.toContain("┏━╸┏━┓");
-    expect(text).not.toContain("g n h f");
-    expect(text).not.toContain("Make it work");
+    expect(text).not.toContain("a n i m o");
+    expect(text).not.toContain("- Kent Beck");
     expect(text).not.toContain("reading files");
     expect(text).toContain("my prompt");
     expect(text).toContain("00:01:00");
-    expect(rows.length).toBeLessThanOrEqual(12);
+    expect(rows.length).toBeLessThanOrEqual(10);
   });
 
   it("hides prompt text last", () => {
@@ -926,15 +818,14 @@ describe("buildContentCells adaptive height", () => {
       state,
       "00:01:00",
       0,
-      8,
+      6,
     );
     const text = toText(rows);
-    expect(text).not.toContain("┏━╸┏━┓");
-    expect(text).not.toContain("g n h f");
+    expect(text).not.toContain("a n i m o");
     expect(text).not.toContain("reading files");
     expect(text).not.toContain("my prompt");
     expect(text).toContain("00:01:00");
-    expect(rows.length).toBeLessThanOrEqual(8);
+    expect(rows.length).toBeLessThanOrEqual(6);
   });
 
   it("always keeps stats and moon strip even at minimum height", () => {
@@ -1329,7 +1220,7 @@ describe("Renderer terminal title", () => {
 
       const titles = extractTerminalTitles(stdoutWrite);
       expect(titles.at(-1)).toMatch(
-        /^gnhf [🌑🌒🌓🌔🌕🌖🌗🌘] · 12K in · 8K out · 12 commits$/u,
+        /^animo [🌑🌒🌓🌔🌕🌖🌗🌘] · 12K in · 8K out · 12 commits$/u,
       );
 
       renderer.stop();
@@ -1395,7 +1286,7 @@ describe("Renderer terminal title", () => {
       const titles = extractTerminalTitles(stdoutWrite);
       const meaningfulTitles = titles.filter((t: string) => t !== "");
       expect(meaningfulTitles.at(-1)).toBe(
-        "gnhf stopped · 12K in · 8K out · 12 commits",
+        "animo stopped · 12K in · 8K out · 12 commits",
       );
     } finally {
       restoreStdoutTty();
@@ -1470,5 +1361,141 @@ describe("Renderer terminal title", () => {
       restoreStdinTty();
       stdoutWrite.mockRestore();
     }
+  });
+});
+
+describe("background themes", () => {
+  describe("selectBackgroundTheme", () => {
+    it("returns one of the three themes", () => {
+      for (let i = 0; i < 30; i++) {
+        const theme = selectBackgroundTheme(i / 30);
+        expect(["stars", "mario", "tetris"]).toContain(theme);
+      }
+    });
+
+    it("is deterministic for same seed", () => {
+      expect(selectBackgroundTheme(0.1)).toBe(selectBackgroundTheme(0.1));
+      expect(selectBackgroundTheme(0.5)).toBe(selectBackgroundTheme(0.5));
+    });
+  });
+
+  describe("mario background", () => {
+    it("generates clouds, blocks, and pipes", () => {
+      const state = generateMarioBackground(80, 24, 42);
+      expect(state.clouds.length).toBeGreaterThan(0);
+      expect(state.blocks.length).toBeGreaterThan(0);
+      expect(state.pipes.length).toBeGreaterThan(0);
+      expect(state.width).toBe(80);
+      expect(state.height).toBe(24);
+    });
+
+    it("renders cells without crashing", () => {
+      const state = generateMarioBackground(80, 24, 42);
+      const cells = emptyCells(80);
+      renderMarioRow(state, cells, 0, 0, 80, Date.now());
+      renderMarioRow(state, cells, 23, 0, 80, Date.now());
+    });
+
+    it("renders ground pattern on the last row", () => {
+      const state = generateMarioBackground(80, 24, 42);
+      const cells = emptyCells(80);
+      renderMarioRow(state, cells, 23, 0, 80, 1000);
+      const filled = cells.filter((c) => c.char !== " ");
+      expect(filled.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("tetris background", () => {
+    it("generates falling pieces and landed cells", () => {
+      const state = generateTetrisBackground(80, 24, 42);
+      expect(state.fallingPieces.length).toBeGreaterThan(0);
+      expect(state.landedCells.length).toBeGreaterThan(0);
+      expect(state.width).toBe(80);
+      expect(state.height).toBe(24);
+    });
+
+    it("renders cells without crashing", () => {
+      const state = generateTetrisBackground(80, 24, 42);
+      const cells = emptyCells(80);
+      renderTetrisRow(state, cells, 0, 0, 80, Date.now());
+      renderTetrisRow(state, cells, 23, 0, 80, Date.now());
+    });
+
+    it("places landed cells on bottom rows", () => {
+      const state = generateTetrisBackground(80, 24, 42);
+      const cells = emptyCells(80);
+      renderTetrisRow(state, cells, 23, 0, 80, 5000);
+      const filled = cells.filter((c) => c.char !== " ");
+      expect(filled.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("buildFrameCells with themes", () => {
+    const baseState: OrchestratorState = {
+      status: "running",
+      gracefulStopRequested: false,
+      interruptHint: "resume",
+      currentIteration: 1,
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      tokensEstimated: false,
+      commitCount: 0,
+      iterations: [],
+      successCount: 0,
+      failCount: 0,
+      consecutiveFailures: 0,
+      consecutiveErrors: 0,
+      startTime: new Date(),
+      waitingUntil: null,
+      lastMessage: null,
+    };
+
+    it("renders with mario theme without errors", () => {
+      const mario = generateMarioBackground(100, 30, 42);
+      const cells = buildFrameCells(
+        "test prompt",
+        "claude",
+        baseState,
+        [],
+        [],
+        [],
+        Date.now(),
+        100,
+        30,
+        [],
+        [],
+        [],
+        selectModernQuote(0),
+        undefined,
+        "mario",
+        mario,
+        null,
+      );
+      expect(cells.length).toBe(30);
+    });
+
+    it("renders with tetris theme without errors", () => {
+      const tetris = generateTetrisBackground(100, 30, 42);
+      const cells = buildFrameCells(
+        "test prompt",
+        "claude",
+        baseState,
+        [],
+        [],
+        [],
+        Date.now(),
+        100,
+        30,
+        [],
+        [],
+        [],
+        selectModernQuote(0),
+        undefined,
+        "tetris",
+        null,
+        tetris,
+      );
+      expect(cells.length).toBe(30);
+    });
   });
 });

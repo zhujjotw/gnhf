@@ -5,8 +5,8 @@
 {"type":"text_delta","text":" context of this run","stream":"thought","tag":"agent_thought_chunk"}
 {"type":"text_delta","text":".\n","stream":"thought","tag":"agent_thought_chunk"}
 {"type":"tool_call","text":"read (pending)","tag":"tool_call","toolCallId":"toolu_0b3ababd58a14fba8d374dc2","status":"pending","title":"read"}
-{"type":"tool_call","text":"read (in_progress): <cwd>/.gnhf/runs/add-a-function-calle-955b7c/notes.md","tag":"tool_call_update","toolCallId":"toolu_0b3ababd58a14fba8d374dc2","status":"in_progress","title":"read"}
-{"type":"tool_call","text":".gnhf/runs/add-a-function-calle-955b7c/notes.md (completed): <cwd>/.gnhf/runs/add-a-function-calle-955b7c/notes.md","tag":"tool_call_update","toolCallId":"toolu_0b3ababd58a14fba8d374dc2","status":"completed","title":".gnhf/runs/add-a-function-calle-955b7c/notes.md"}
+{"type":"tool_call","text":"read (in_progress): <cwd>/.animo/runs/add-a-function-calle-955b7c/notes.md","tag":"tool_call_update","toolCallId":"toolu_0b3ababd58a14fba8d374dc2","status":"in_progress","title":"read"}
+{"type":"tool_call","text":".animo/runs/add-a-function-calle-955b7c/notes.md (completed): <cwd>/.animo/runs/add-a-function-calle-955b7c/notes.md","tag":"tool_call_update","toolCallId":"toolu_0b3ababd58a14fba8d374dc2","status":"completed","title":".animo/runs/add-a-function-calle-955b7c/notes.md"}
 {"type":"text_delta","text":"The","stream":"thought","tag":"agent_thought_chunk"}
 {"type":"text_delta","text":" notes file is empty","stream":"thought","tag":"agent_thought_chunk"}
 {"type":"text_delta","text":" (no previous iterations","stream":"thought","tag":"agent_thought_chunk"}

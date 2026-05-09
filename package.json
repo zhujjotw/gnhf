@@ -1,10 +1,10 @@
 {
-  "name": "gnhf",
+  "name": "animo",
   "version": "0.1.41",
   "description": "Before I go to bed, I tell my agents: good night, have fun",
   "type": "module",
   "bin": {
-    "gnhf": "dist/cli.mjs"
+    "animo": "dist/cli.mjs"
   },
   "scripts": {
     "build": "tsdown",
@@ -48,7 +48,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/kunchenguid/gnhf"
+    "url": "https://github.com/kunchenguid/animo"
   },
   "engines": {
     "node": ">=20"

@@ -38,9 +38,9 @@ interface SleepPreventionDeps {
 
 const SYSTEMD_INHIBIT_READY_TIMEOUT_MS = 5_000;
 const SYSTEMD_INHIBIT_READY_POLL_MS = 25;
-const GNHF_SLEEP_REEXEC_READY_PATH = "GNHF_SLEEP_REEXEC_READY_PATH";
-const GNHF_SLEEP_REEXEC_READY_DIR_PREFIX = "gnhf-sleep-";
-const GNHF_SLEEP_REEXEC_READY_FILENAME = "reexec-ready";
+const ANIMO_SLEEP_REEXEC_READY_PATH = "ANIMO_SLEEP_REEXEC_READY_PATH";
+const ANIMO_SLEEP_REEXEC_READY_DIR_PREFIX = "animo-sleep-";
+const ANIMO_SLEEP_REEXEC_READY_FILENAME = "reexec-ready";
 const HELPER_STARTUP_GRACE_MS = 100;
 
 function getSignalExitCode(signal: NodeJS.Signals | null): number {
@@ -96,14 +96,14 @@ function isTrustedLinuxReexecReadyPath(readyPath: string): boolean {
   const resolvedReadyPath = resolve(readyPath);
   const readyDir = dirname(resolvedReadyPath);
   return (
-    basename(resolvedReadyPath) === GNHF_SLEEP_REEXEC_READY_FILENAME &&
+    basename(resolvedReadyPath) === ANIMO_SLEEP_REEXEC_READY_FILENAME &&
     dirname(readyDir) === resolve(tmpdir()) &&
-    basename(readyDir).startsWith(GNHF_SLEEP_REEXEC_READY_DIR_PREFIX)
+    basename(readyDir).startsWith(ANIMO_SLEEP_REEXEC_READY_DIR_PREFIX)
   );
 }
 
 function signalLinuxReexecReady(env: NodeJS.ProcessEnv): void {
-  const readyPath = env[GNHF_SLEEP_REEXEC_READY_PATH];
+  const readyPath = env[ANIMO_SLEEP_REEXEC_READY_PATH];
   if (!readyPath) return;
   if (!isTrustedLinuxReexecReadyPath(readyPath)) {
     appendDebugLog("sleep:ready-signal-failed", {
@@ -267,22 +267,22 @@ export async function startSleepPrevention(
   const spawnFn = deps.spawn ?? spawn;
 
   if (platform === "linux") {
-    if (env.GNHF_SLEEP_INHIBITED === "1") {
+    if (env.ANIMO_SLEEP_INHIBITED === "1") {
       signalLinuxReexecReady(env);
       return { type: "skipped", reason: "already-inhibited" };
     }
 
     const readyDir = mkdtempSync(
-      join(tmpdir(), GNHF_SLEEP_REEXEC_READY_DIR_PREFIX),
+      join(tmpdir(), ANIMO_SLEEP_REEXEC_READY_DIR_PREFIX),
     );
-    const readyPath = join(readyDir, GNHF_SLEEP_REEXEC_READY_FILENAME);
+    const readyPath = join(readyDir, ANIMO_SLEEP_REEXEC_READY_FILENAME);
     const child = spawnFn(
       "systemd-inhibit",
       [
         "--what=idle:sleep",
         "--mode=block",
-        "--who=gnhf",
-        "--why=Prevent sleep while gnhf is running",
+        "--who=animo",
+        "--why=Prevent sleep while animo is running",
         processExecPath,
         ...processExecArgv,
         processArgv1,
@@ -293,8 +293,8 @@ export async function startSleepPrevention(
         env: {
           ...env,
           ...reexecEnv,
-          GNHF_SLEEP_INHIBITED: "1",
-          [GNHF_SLEEP_REEXEC_READY_PATH]: readyPath,
+          ANIMO_SLEEP_INHIBITED: "1",
+          [ANIMO_SLEEP_REEXEC_READY_PATH]: readyPath,
         },
         stdio: "inherit",
       },

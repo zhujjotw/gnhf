@@ -1,7 +1,7 @@
 import { defineConfig } from "tsdown";
 
-const buildUmamiHost = process.env.GNHF_UMAMI_HOST ?? "";
-const buildUmamiWebsiteID = process.env.GNHF_UMAMI_WEBSITE_ID ?? "";
+const buildUmamiHost = process.env.ANIMO_UMAMI_HOST ?? "";
+const buildUmamiWebsiteID = process.env.ANIMO_UMAMI_WEBSITE_ID ?? "";
 
 export default defineConfig({
   entry: ["src/cli.ts"],
@@ -13,7 +13,7 @@ export default defineConfig({
   outDir: "dist",
   dts: false,
   define: {
-    __GNHF_UMAMI_HOST__: JSON.stringify(buildUmamiHost),
-    __GNHF_UMAMI_WEBSITE_ID__: JSON.stringify(buildUmamiWebsiteID),
+    __ANIMO_UMAMI_HOST__: JSON.stringify(buildUmamiHost),
+    __ANIMO_UMAMI_WEBSITE_ID__: JSON.stringify(buildUmamiWebsiteID),
   },
 });

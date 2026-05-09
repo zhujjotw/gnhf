@@ -44,9 +44,9 @@ function git(args: string[], cwd: string): string {
 }
 
 function createRepo(): string {
-  const cwd = mkdtempSync(join(tmpdir(), "gnhf-e2e-acp-"));
+  const cwd = mkdtempSync(join(tmpdir(), "animo-e2e-acp-"));
   git(["init", "-b", "main"], cwd);
-  git(["config", "user.name", "gnhf tests"], cwd);
+  git(["config", "user.name", "animo tests"], cwd);
   git(["config", "user.email", "tests@example.com"], cwd);
   writeFileSync(join(cwd, "README.md"), "# fixture\n", "utf-8");
   git(["add", "README.md"], cwd);
@@ -64,14 +64,14 @@ function readJsonLines(filePath: string): Record<string, unknown>[] {
 }
 
 function findRunLogPath(cwd: string): string {
-  const runsDir = join(cwd, ".gnhf", "runs");
+  const runsDir = join(cwd, ".animo", "runs");
   const runs = readdirSync(runsDir);
   if (runs.length !== 1) {
     throw new Error(
       `Expected exactly one run in ${runsDir}, found ${runs.length}`,
     );
   }
-  return join(runsDir, runs[0]!, "gnhf.log");
+  return join(runsDir, runs[0]!, "animo.log");
 }
 
 async function waitForLogEvent(
@@ -121,10 +121,10 @@ function setupAcpHome(
   home: string;
   configPath: string;
 } {
-  const home = mkdtempSync(join(tmpdir(), "gnhf-e2e-acp-home-"));
+  const home = mkdtempSync(join(tmpdir(), "animo-e2e-acp-home-"));
   tempDirs.push(home);
-  mkdirSync(join(home, ".gnhf"), { recursive: true });
-  const configPath = join(home, ".gnhf", "config.yml");
+  mkdirSync(join(home, ".animo"), { recursive: true });
+  const configPath = join(home, ".animo", "config.yml");
   writeFileSync(
     configPath,
     [
@@ -176,7 +176,7 @@ function runCli(
   });
 }
 
-describe("gnhf acp e2e", () => {
+describe("animo acp e2e", () => {
   const tempDirs: string[] = [];
 
   afterEach(() => {
@@ -196,7 +196,7 @@ describe("gnhf acp e2e", () => {
 
   // Real-adapter persona tests. Each persona replays a recorded trace captured
   // from a real ACP adapter (Claude Code, Codex, OpenCode) via the bundled acpx
-  // runtime, so the wire shape gnhf has to consume exactly matches what real
+  // runtime, so the wire shape animo has to consume exactly matches what real
   // adapters emit:
   //   - claude: 7 medium agent_message_chunk text_deltas, prose+JSON in one
   //     continuous stream, ~25 interleaved tool_call/usage_update events
@@ -208,7 +208,7 @@ describe("gnhf acp e2e", () => {
     async (persona) => {
       const cwd = createRepo();
       tempDirs.push(cwd);
-      const logDir = mkdtempSync(join(tmpdir(), "gnhf-e2e-acp-logs-"));
+      const logDir = mkdtempSync(join(tmpdir(), "animo-e2e-acp-logs-"));
       tempDirs.push(logDir);
       const mockLogPath = join(logDir, "mock-acp.jsonl");
       const { home } = setupAcpHome(
@@ -259,7 +259,7 @@ describe("gnhf acp e2e", () => {
     async () => {
       const cwd = createRepo();
       tempDirs.push(cwd);
-      const logDir = mkdtempSync(join(tmpdir(), "gnhf-e2e-acp-logs-"));
+      const logDir = mkdtempSync(join(tmpdir(), "animo-e2e-acp-logs-"));
       tempDirs.push(logDir);
       const mockLogPath = join(logDir, "mock-acp.jsonl");
       const { home } = setupAcpHome(
@@ -275,7 +275,7 @@ describe("gnhf acp e2e", () => {
 
       expect(result.code).toBe(0);
       expect(git(["rev-list", "--count", "HEAD"], cwd)).toBe("2");
-      expect(git(["log", "-1", "--format=%s"], cwd)).toContain("gnhf 1:");
+      expect(git(["log", "-1", "--format=%s"], cwd)).toContain("animo 1:");
 
       const mockEvents = readJsonLines(mockLogPath).map((e) => e.event);
       expect(mockEvents).toContain("agent:initialize");
@@ -300,7 +300,7 @@ describe("gnhf acp e2e", () => {
     async () => {
       const cwd = createRepo();
       tempDirs.push(cwd);
-      const logDir = mkdtempSync(join(tmpdir(), "gnhf-e2e-acp-logs-"));
+      const logDir = mkdtempSync(join(tmpdir(), "animo-e2e-acp-logs-"));
       tempDirs.push(logDir);
       const mockLogPath = join(logDir, "mock-acp.jsonl");
       const rawAgentCommand = buildMockTargetCommand({
@@ -336,7 +336,7 @@ describe("gnhf acp e2e", () => {
     async () => {
       const cwd = createRepo();
       tempDirs.push(cwd);
-      const logDir = mkdtempSync(join(tmpdir(), "gnhf-e2e-acp-logs-"));
+      const logDir = mkdtempSync(join(tmpdir(), "animo-e2e-acp-logs-"));
       tempDirs.push(logDir);
       const mockLogPath = join(logDir, "mock-acp.jsonl");
       const { home } = setupAcpHome(
@@ -368,7 +368,7 @@ describe("gnhf acp e2e", () => {
       expect(newSessionCount).toBe(1);
       expect(promptStartCount).toBe(3);
 
-      // Mock emits cumulative usage = 100, 200, 300 across iterations. gnhf
+      // Mock emits cumulative usage = 100, 200, 300 across iterations. animo
       // should compute per-iteration deltas of 100 each, so total input
       // tokens after 3 iterations = 300.
       const usageEvents = mockEntries.filter(
@@ -406,7 +406,7 @@ describe("gnhf acp e2e", () => {
       // as estimated so the renderer can show "~". This test exercises both.
       const cwd = createRepo();
       tempDirs.push(cwd);
-      const logDir = mkdtempSync(join(tmpdir(), "gnhf-e2e-acp-logs-"));
+      const logDir = mkdtempSync(join(tmpdir(), "animo-e2e-acp-logs-"));
       tempDirs.push(logDir);
       const mockLogPath = join(logDir, "mock-acp.jsonl");
       const { home } = setupAcpHome(
@@ -464,7 +464,7 @@ describe("gnhf acp e2e", () => {
     async () => {
       const cwd = createRepo();
       tempDirs.push(cwd);
-      const logDir = mkdtempSync(join(tmpdir(), "gnhf-e2e-acp-logs-"));
+      const logDir = mkdtempSync(join(tmpdir(), "animo-e2e-acp-logs-"));
       tempDirs.push(logDir);
       const mockLogPath = join(logDir, "mock-acp.jsonl");
       const { home } = setupAcpHome(

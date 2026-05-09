@@ -37,16 +37,16 @@ const TEST_REDACT_AGENT_SPEC = (name: string) => {
 
 const stubRunInfo: RunInfo = {
   runId: "run-abc",
-  runDir: "/repo/.gnhf/runs/run-abc",
-  promptPath: "/repo/.gnhf/runs/run-abc/PROMPT.md",
-  notesPath: "/repo/.gnhf/runs/run-abc/notes.md",
-  schemaPath: "/repo/.gnhf/runs/run-abc/schema.json",
-  logPath: "/repo/.gnhf/runs/run-abc/gnhf.log",
+  runDir: "/repo/.animo/runs/run-abc",
+  promptPath: "/repo/.animo/runs/run-abc/PROMPT.md",
+  notesPath: "/repo/.animo/runs/run-abc/notes.md",
+  schemaPath: "/repo/.animo/runs/run-abc/schema.json",
+  logPath: "/repo/.animo/runs/run-abc/animo.log",
   baseCommit: "abc123",
-  baseCommitPath: "/repo/.gnhf/runs/run-abc/base-commit",
-  stopWhenPath: "/repo/.gnhf/runs/run-abc/stop-when",
+  baseCommitPath: "/repo/.animo/runs/run-abc/base-commit",
+  stopWhenPath: "/repo/.animo/runs/run-abc/stop-when",
   stopWhen: undefined,
-  commitMessagePath: "/repo/.gnhf/runs/run-abc/commit-message",
+  commitMessagePath: "/repo/.animo/runs/run-abc/commit-message",
   commitMessage: undefined,
 };
 
@@ -244,7 +244,7 @@ async function runCliWithMocks(
     },
   }));
 
-  process.argv = ["node", "gnhf", ...args];
+  process.argv = ["node", "animo", ...args];
   const originalIsTTY = Object.getOwnPropertyDescriptor(process.stdin, "isTTY");
   Object.defineProperty(process.stdin, "isTTY", {
     configurable: true,
@@ -435,7 +435,7 @@ async function runSigintCliTest({
     },
   }));
 
-  process.argv = ["node", "gnhf", "ship it"];
+  process.argv = ["node", "animo", "ship it"];
 
   try {
     const cliPromise = import("./cli.js");
@@ -509,8 +509,8 @@ async function runCliResumeWithActualRun(
     );
   }) as typeof process.exit);
 
-  const tempDir = mkdtempSync(join(tmpdir(), "gnhf-cli-resume-test-"));
-  const runDir = join(tempDir, ".gnhf", "runs", "existing-run");
+  const tempDir = mkdtempSync(join(tmpdir(), "animo-cli-resume-test-"));
+  const runDir = join(tempDir, ".animo", "runs", "existing-run");
   const promptPath = join(runDir, "prompt.md");
   const baseCommitPath = join(runDir, "base-commit");
   const stopWhenPath = join(runDir, "stop-when");
@@ -557,7 +557,7 @@ async function runCliResumeWithActualRun(
     ensureCleanWorkingTree: vi.fn(),
     createBranch: vi.fn(),
     getHeadCommit: vi.fn(() => "abc123"),
-    getCurrentBranch: vi.fn(() => "gnhf/existing-run"),
+    getCurrentBranch: vi.fn(() => "animo/existing-run"),
     getRepoRootDir: vi.fn(() => tempDir),
     createWorktree: vi.fn(),
     removeWorktree: vi.fn(),
@@ -613,7 +613,7 @@ async function runCliResumeWithActualRun(
 
   try {
     process.chdir(tempDir);
-    process.argv = ["node", "gnhf", ...args];
+    process.argv = ["node", "animo", ...args];
     Object.defineProperty(process.stdin, "isTTY", {
       configurable: true,
       value: true,
@@ -711,7 +711,7 @@ describe("cli", () => {
         getCurrentBranch: vi
           .fn()
           .mockReturnValueOnce("main")
-          .mockReturnValue("gnhf/refactor-auth-flow"),
+          .mockReturnValue("animo/refactor-auth-flow"),
         orchestratorGetState: vi.fn(() => ({
           status: "stopped" as const,
           gracefulStopRequested: false,
@@ -734,9 +734,9 @@ describe("cli", () => {
     );
 
     const stdout = stdoutWriteCalls.map(([chunk]) => String(chunk)).join("");
-    expect(stdout).toContain("gnhf wrapped");
+    expect(stdout).toContain("animo wrapped");
     expect(stdout).toContain(
-      "opencode worked for 47m 12s on gnhf/refactor-auth-flow",
+      "opencode worked for 47m 12s on animo/refactor-auth-flow",
     );
     expect(stdout).toContain("branch diff");
     expect(stdout).toContain("6 commits");
@@ -1156,7 +1156,7 @@ describe("cli", () => {
     expect(rendererCtor.mock.calls[0]?.[4]).toEqual({ meteorFrequency: 3 });
   });
 
-  it("runs on the current branch without creating a gnhf branch when --current-branch is set", async () => {
+  it("runs on the current branch without creating an animo branch when --current-branch is set", async () => {
     const createBranch = vi.fn();
     const { setupRun, orchestratorCtor } = await runCliWithMocks(
       ["ship it", "--current-branch"],
@@ -1184,7 +1184,7 @@ describe("cli", () => {
 
   it("resumes the same-prompt run when --current-branch is set", async () => {
     const originalCwd = process.cwd();
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-cli-current-resume-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-cli-current-resume-"));
     const runId = `ship-it-${createHash("sha256").update("ship it").digest("hex").slice(0, 6)}`;
     const resumeRun = vi.fn(() => ({
       ...stubRunInfo,
@@ -1192,7 +1192,7 @@ describe("cli", () => {
     }));
     const getLastIterationNumber = vi.fn(() => 2);
 
-    mkdirSync(join(tempDir, ".gnhf", "runs", runId), {
+    mkdirSync(join(tempDir, ".animo", "runs", runId), {
       recursive: true,
     });
     process.chdir(tempDir);
@@ -1231,7 +1231,7 @@ describe("cli", () => {
 
   it("requires a clean working tree before resuming a current-branch run", async () => {
     const originalCwd = process.cwd();
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-cli-current-resume-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-cli-current-resume-"));
     const runId = `ship-it-${createHash("sha256").update("ship it").digest("hex").slice(0, 6)}`;
     const ensureCleanWorkingTree = vi.fn();
     const resumeRun = vi.fn(() => ({
@@ -1239,7 +1239,7 @@ describe("cli", () => {
       runId,
     }));
 
-    mkdirSync(join(tempDir, ".gnhf", "runs", runId), {
+    mkdirSync(join(tempDir, ".animo", "runs", runId), {
       recursive: true,
     });
     process.chdir(tempDir);
@@ -1338,9 +1338,9 @@ describe("cli", () => {
     let promptFilePath: string | undefined;
     const readStdinText = vi.fn(() => Promise.resolve("objective from stdin"));
     const startSleepPrevention = vi.fn(async (_argv, deps) => {
-      promptFilePath = deps?.reexecEnv?.GNHF_REEXEC_STDIN_PROMPT_FILE;
+      promptFilePath = deps?.reexecEnv?.ANIMO_REEXEC_STDIN_PROMPT_FILE;
       expect(promptFilePath).toEqual(expect.any(String));
-      expect(deps?.reexecEnv?.GNHF_REEXEC_STDIN_PROMPT).toBeUndefined();
+      expect(deps?.reexecEnv?.ANIMO_REEXEC_STDIN_PROMPT).toBeUndefined();
       expect(readFileSync(promptFilePath!, "utf-8")).toBe(
         "objective from stdin",
       );
@@ -1378,7 +1378,7 @@ describe("cli", () => {
         reason: "already-inhibited",
       }),
     );
-    const promptDir = mkdtempSync(join(tmpdir(), "gnhf-stdin-"));
+    const promptDir = mkdtempSync(join(tmpdir(), "animo-stdin-"));
     const promptPath = join(promptDir, "prompt.txt");
     writeFileSync(promptPath, "objective from stdin", "utf-8");
 
@@ -1395,8 +1395,8 @@ describe("cli", () => {
         },
         {
           env: {
-            GNHF_REEXEC_STDIN_PROMPT_FILE: promptPath,
-            GNHF_SLEEP_INHIBITED: "1",
+            ANIMO_REEXEC_STDIN_PROMPT_FILE: promptPath,
+            ANIMO_SLEEP_INHIBITED: "1",
           },
           readStdinText,
           startSleepPrevention,
@@ -1436,7 +1436,7 @@ describe("cli", () => {
       },
       {
         env: {
-          GNHF_SLEEP_INHIBITED: "1",
+          ANIMO_SLEEP_INHIBITED: "1",
         },
         readStdinText,
         startSleepPrevention,
@@ -1453,7 +1453,7 @@ describe("cli", () => {
   it("clears the serialized stdin prompt file path from process.env after reading it", async () => {
     let inheritedPromptPath: string | undefined;
     const createAgent = vi.fn(() => {
-      inheritedPromptPath = process.env.GNHF_REEXEC_STDIN_PROMPT_FILE;
+      inheritedPromptPath = process.env.ANIMO_REEXEC_STDIN_PROMPT_FILE;
       return { name: "claude" };
     });
     const startSleepPrevention = vi.fn(() =>
@@ -1462,7 +1462,7 @@ describe("cli", () => {
         reason: "already-inhibited",
       }),
     );
-    const promptDir = mkdtempSync(join(tmpdir(), "gnhf-stdin-"));
+    const promptDir = mkdtempSync(join(tmpdir(), "animo-stdin-"));
     const promptPath = join(promptDir, "prompt.txt");
     writeFileSync(promptPath, "sensitive prompt", "utf-8");
 
@@ -1480,8 +1480,8 @@ describe("cli", () => {
         {
           createAgent,
           env: {
-            GNHF_REEXEC_STDIN_PROMPT_FILE: promptPath,
-            GNHF_SLEEP_INHIBITED: "1",
+            ANIMO_REEXEC_STDIN_PROMPT_FILE: promptPath,
+            ANIMO_SLEEP_INHIBITED: "1",
           },
           startSleepPrevention,
         },
@@ -1497,7 +1497,7 @@ describe("cli", () => {
   });
 
   it("does not recursively delete an untrusted prompt file parent directory", async () => {
-    const promptDir = mkdtempSync(join(tmpdir(), "gnhf-cli-test-"));
+    const promptDir = mkdtempSync(join(tmpdir(), "animo-cli-test-"));
     const promptPath = join(promptDir, "prompt-from-env.txt");
     const siblingPath = join(promptDir, "keep.txt");
     writeFileSync(promptPath, "prompt from env", "utf-8");
@@ -1516,8 +1516,8 @@ describe("cli", () => {
         },
         {
           env: {
-            GNHF_REEXEC_STDIN_PROMPT_FILE: promptPath,
-            GNHF_SLEEP_INHIBITED: "1",
+            ANIMO_REEXEC_STDIN_PROMPT_FILE: promptPath,
+            ANIMO_SLEEP_INHIBITED: "1",
           },
           startSleepPrevention: vi.fn(() =>
             Promise.resolve({
@@ -1627,9 +1627,9 @@ describe("cli", () => {
       .spyOn(process, "exit")
       .mockImplementation((() => undefined) as typeof process.exit);
 
-    process.argv = ["node", "gnhf", "ship it"];
-    const originalSleepInhibited = process.env.GNHF_SLEEP_INHIBITED;
-    process.env.GNHF_SLEEP_INHIBITED = "1";
+    process.argv = ["node", "animo", "ship it"];
+    const originalSleepInhibited = process.env.ANIMO_SLEEP_INHIBITED;
+    process.env.ANIMO_SLEEP_INHIBITED = "1";
 
     try {
       await import("./cli.js");
@@ -1642,9 +1642,9 @@ describe("cli", () => {
     } finally {
       process.argv = originalArgv;
       if (originalSleepInhibited === undefined) {
-        delete process.env.GNHF_SLEEP_INHIBITED;
+        delete process.env.ANIMO_SLEEP_INHIBITED;
       } else {
-        process.env.GNHF_SLEEP_INHIBITED = originalSleepInhibited;
+        process.env.ANIMO_SLEEP_INHIBITED = originalSleepInhibited;
       }
       stdoutWrite.mockRestore();
       exitSpy.mockRestore();
@@ -1673,7 +1673,7 @@ describe("cli", () => {
     const startSleepPrevention = vi.fn(() =>
       Promise.resolve({ type: "skipped" as const, reason: "unsupported" }),
     );
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-cli-test-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-cli-test-"));
     const promptPath = join(tempDir, "PROMPT.md");
     writeFileSync(promptPath, "existing prompt", "utf-8");
     const ttyInput = { destroy: vi.fn(), isTTY: true };
@@ -1722,7 +1722,7 @@ describe("cli", () => {
       ensureCleanWorkingTree: vi.fn(),
       createBranch: vi.fn(),
       getHeadCommit: vi.fn(() => "abc123"),
-      getCurrentBranch: vi.fn(() => "gnhf/existing-run"),
+      getCurrentBranch: vi.fn(() => "animo/existing-run"),
     }));
     vi.doMock("./core/run.js", () => ({
       setupRun: vi.fn(() => stubRunInfo),
@@ -1760,7 +1760,7 @@ describe("cli", () => {
       },
     }));
 
-    process.argv = ["node", "gnhf", "new prompt"];
+    process.argv = ["node", "animo", "new prompt"];
     const originalIsTTY = Object.getOwnPropertyDescriptor(
       process.stdin,
       "isTTY",
@@ -1827,7 +1827,7 @@ describe("cli", () => {
     const startSleepPrevention = vi.fn(() =>
       Promise.resolve({ type: "skipped" as const, reason: "unsupported" }),
     );
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-cli-test-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-cli-test-"));
     const promptPath = join(tempDir, "PROMPT.md");
     writeFileSync(promptPath, "existing prompt", "utf-8");
     const openSync = vi.fn(() => {
@@ -1859,7 +1859,7 @@ describe("cli", () => {
       ensureCleanWorkingTree: vi.fn(),
       createBranch: vi.fn(),
       getHeadCommit: vi.fn(() => "abc123"),
-      getCurrentBranch: vi.fn(() => "gnhf/existing-run"),
+      getCurrentBranch: vi.fn(() => "animo/existing-run"),
     }));
     vi.doMock("./core/run.js", () => ({
       setupRun: vi.fn(() => stubRunInfo),
@@ -1897,7 +1897,7 @@ describe("cli", () => {
       },
     }));
 
-    process.argv = ["node", "gnhf", "new prompt"];
+    process.argv = ["node", "animo", "new prompt"];
     const originalIsTTY = Object.getOwnPropertyDescriptor(
       process.stdin,
       "isTTY",
@@ -1953,7 +1953,7 @@ describe("cli", () => {
     const startSleepPrevention = vi.fn(() =>
       Promise.resolve({ type: "skipped" as const, reason: "unsupported" }),
     );
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-cli-test-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-cli-test-"));
     const promptPath = join(tempDir, "PROMPT.md");
     writeFileSync(promptPath, "existing prompt", "utf-8");
     let sigintListener: (() => void) | undefined;
@@ -1992,7 +1992,7 @@ describe("cli", () => {
       ensureCleanWorkingTree: vi.fn(),
       createBranch: vi.fn(),
       getHeadCommit: vi.fn(() => "abc123"),
-      getCurrentBranch: vi.fn(() => "gnhf/existing-run"),
+      getCurrentBranch: vi.fn(() => "animo/existing-run"),
     }));
     vi.doMock("./core/run.js", () => ({
       setupRun: vi.fn(() => stubRunInfo),
@@ -2030,7 +2030,7 @@ describe("cli", () => {
       },
     }));
 
-    process.argv = ["node", "gnhf", "new prompt"];
+    process.argv = ["node", "animo", "new prompt"];
     const originalIsTTY = Object.getOwnPropertyDescriptor(
       process.stdin,
       "isTTY",
@@ -2081,7 +2081,7 @@ describe("cli", () => {
     const startSleepPrevention = vi.fn(() =>
       Promise.resolve({ type: "skipped" as const, reason: "unsupported" }),
     );
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-cli-test-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-cli-test-"));
     const promptPath = join(tempDir, "PROMPT.md");
     writeFileSync(promptPath, "existing prompt", "utf-8");
     let closeListener: (() => void) | undefined;
@@ -2120,7 +2120,7 @@ describe("cli", () => {
       ensureCleanWorkingTree: vi.fn(),
       createBranch: vi.fn(),
       getHeadCommit: vi.fn(() => "abc123"),
-      getCurrentBranch: vi.fn(() => "gnhf/existing-run"),
+      getCurrentBranch: vi.fn(() => "animo/existing-run"),
     }));
     vi.doMock("./core/run.js", () => ({
       setupRun: vi.fn(() => stubRunInfo),
@@ -2158,7 +2158,7 @@ describe("cli", () => {
       },
     }));
 
-    process.argv = ["node", "gnhf", "new prompt"];
+    process.argv = ["node", "animo", "new prompt"];
     const originalIsTTY = Object.getOwnPropertyDescriptor(
       process.stdin,
       "isTTY",
@@ -2213,7 +2213,7 @@ describe("cli", () => {
     const startSleepPrevention = vi.fn(() =>
       Promise.resolve({ type: "skipped" as const, reason: "unsupported" }),
     );
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-cli-test-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-cli-test-"));
     const promptPath = join(tempDir, "PROMPT.md");
     writeFileSync(promptPath, "existing prompt", "utf-8");
 
@@ -2245,7 +2245,7 @@ describe("cli", () => {
       ensureCleanWorkingTree: vi.fn(),
       createBranch: vi.fn(),
       getHeadCommit: vi.fn(() => "abc123"),
-      getCurrentBranch: vi.fn(() => "gnhf/existing-run"),
+      getCurrentBranch: vi.fn(() => "animo/existing-run"),
     }));
     vi.doMock("./core/run.js", () => ({
       setupRun: vi.fn(() => stubRunInfo),
@@ -2283,7 +2283,7 @@ describe("cli", () => {
       },
     }));
 
-    process.argv = ["node", "gnhf", "new prompt"];
+    process.argv = ["node", "animo", "new prompt"];
     const originalIsTTY = Object.getOwnPropertyDescriptor(
       process.stdin,
       "isTTY",
@@ -2313,12 +2313,12 @@ describe("cli", () => {
     }
   });
 
-  it("continues from the last iteration when updating the prompt on an existing gnhf branch", async () => {
+  it("continues from the last iteration when updating the prompt on an existing animo branch", async () => {
     const originalArgv = [...process.argv];
     const stdoutWrite = vi
       .spyOn(process.stdout, "write")
       .mockImplementation(() => true);
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-cli-test-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-cli-test-"));
     const promptPath = join(tempDir, "PROMPT.md");
     const orchestratorCtor = vi.fn();
     const setupRun = vi.fn(() => stubRunInfo);
@@ -2368,7 +2368,7 @@ describe("cli", () => {
       ensureCleanWorkingTree: vi.fn(),
       createBranch: vi.fn(),
       getHeadCommit: vi.fn(() => "abc123"),
-      getCurrentBranch: vi.fn(() => "gnhf/existing-run"),
+      getCurrentBranch: vi.fn(() => "animo/existing-run"),
       getRepoRootDir: vi.fn(() => "/repo"),
       createWorktree: vi.fn(),
       removeWorktree: vi.fn(),
@@ -2417,7 +2417,7 @@ describe("cli", () => {
       },
     }));
 
-    process.argv = ["node", "gnhf", "new prompt"];
+    process.argv = ["node", "animo", "new prompt"];
     const originalIsTTY = Object.getOwnPropertyDescriptor(
       process.stdin,
       "isTTY",
@@ -2585,7 +2585,7 @@ describe("cli", () => {
       },
     }));
 
-    process.argv = ["node", "gnhf", "ship it"];
+    process.argv = ["node", "animo", "ship it"];
 
     try {
       const cliPromise = import("./cli.js");
@@ -2724,7 +2724,7 @@ describe("cli", () => {
       },
     }));
 
-    process.argv = ["node", "gnhf", "ship it"];
+    process.argv = ["node", "animo", "ship it"];
 
     try {
       const cliPromise = import("./cli.js");
@@ -2749,7 +2749,7 @@ describe("cli", () => {
 
       expect(exitSpy).toHaveBeenCalledWith(130);
       expect(consoleError).toHaveBeenCalledWith(
-        `\n  gnhf: Run log: ${stubRunInfo.logPath}\n`,
+        `\n  animo: Run log: ${stubRunInfo.logPath}\n`,
       );
     } finally {
       process.argv = originalArgv;
@@ -2804,7 +2804,7 @@ describe("cli", () => {
           consecutiveErrors: 0,
           startTime: new Date("2026-01-01T00:00:00Z"),
           waitingUntil: null,
-          lastMessage: "claude credit balance too low - see gnhf.log",
+          lastMessage: "claude credit balance too low - see animo.log",
           lastAgentError:
             "claude exited with code 1: Credit balance is too low",
         })),
@@ -2812,7 +2812,7 @@ describe("cli", () => {
     );
 
     expect(consoleErrorCalls).toContainEqual([
-      `\n  gnhf: Run log: ${stubRunInfo.logPath}\n`,
+      `\n  animo: Run log: ${stubRunInfo.logPath}\n`,
     ]);
   });
 
@@ -2904,7 +2904,7 @@ describe("cli", () => {
       },
     }));
 
-    process.argv = ["node", "gnhf", "ship it"];
+    process.argv = ["node", "animo", "ship it"];
 
     try {
       await import("./cli.js");
@@ -3066,7 +3066,7 @@ describe("cli", () => {
       };
     });
 
-    process.argv = ["node", "gnhf", "ship it"];
+    process.argv = ["node", "animo", "ship it"];
 
     try {
       const cliPromise = import("./cli.js");
@@ -3215,7 +3215,7 @@ describe("cli", () => {
   });
 
   it("resumes a preserved suffixed worktree instead of creating another one", async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-cli-worktree-resume-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-cli-worktree-resume-"));
     const repoRoot = join(tempDir, "repo");
     const hash = createHash("sha256")
       .update("ship it")
@@ -3223,10 +3223,10 @@ describe("cli", () => {
       .slice(0, 6);
     const runId = `ship-it-${hash}`;
     const suffixedRunId = `${runId}-1`;
-    const suffixedBranch = `gnhf/${suffixedRunId}`;
-    const worktreeRoot = join(tempDir, "repo-gnhf-worktrees");
+    const suffixedBranch = `animo/${suffixedRunId}`;
+    const worktreeRoot = join(tempDir, "repo-animo-worktrees");
     const suffixedWorktreePath = join(worktreeRoot, suffixedRunId);
-    mkdirSync(join(suffixedWorktreePath, ".gnhf", "runs", suffixedRunId), {
+    mkdirSync(join(suffixedWorktreePath, ".animo", "runs", suffixedRunId), {
       recursive: true,
     });
 
@@ -3239,7 +3239,7 @@ describe("cli", () => {
     const resumeRun = vi.fn(() => ({
       ...stubRunInfo,
       runId: suffixedRunId,
-      runDir: join(suffixedWorktreePath, ".gnhf", "runs", suffixedRunId),
+      runDir: join(suffixedWorktreePath, ".animo", "runs", suffixedRunId),
     }));
 
     try {
@@ -3277,24 +3277,24 @@ describe("cli", () => {
   });
 
   it("clears stop-when when resuming a preserved worktree with an empty value", async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-cli-worktree-resume-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-cli-worktree-resume-"));
     const repoRoot = join(tempDir, "repo");
     const hash = createHash("sha256")
       .update("ship it")
       .digest("hex")
       .slice(0, 6);
     const runId = `ship-it-${hash}`;
-    const branch = `gnhf/${runId}`;
-    const worktreeRoot = join(tempDir, "repo-gnhf-worktrees");
+    const branch = `animo/${runId}`;
+    const worktreeRoot = join(tempDir, "repo-animo-worktrees");
     const worktreePath = join(worktreeRoot, runId);
-    mkdirSync(join(worktreePath, ".gnhf", "runs", runId), {
+    mkdirSync(join(worktreePath, ".animo", "runs", runId), {
       recursive: true,
     });
 
     const resumeRun = vi.fn(() => ({
       ...stubRunInfo,
       runId,
-      runDir: join(worktreePath, ".gnhf", "runs", runId),
+      runDir: join(worktreePath, ".animo", "runs", runId),
       stopWhen: undefined,
     }));
 
@@ -3338,7 +3338,7 @@ describe("cli", () => {
   });
 
   it("resumes a preserved suffixed worktree before creating an available unsuffixed one", async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-cli-worktree-resume-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-cli-worktree-resume-"));
     const repoRoot = join(tempDir, "repo");
     const hash = createHash("sha256")
       .update("ship it")
@@ -3346,10 +3346,10 @@ describe("cli", () => {
       .slice(0, 6);
     const runId = `ship-it-${hash}`;
     const suffixedRunId = `${runId}-1`;
-    const suffixedBranch = `gnhf/${suffixedRunId}`;
-    const worktreeRoot = join(tempDir, "repo-gnhf-worktrees");
+    const suffixedBranch = `animo/${suffixedRunId}`;
+    const worktreeRoot = join(tempDir, "repo-animo-worktrees");
     const suffixedWorktreePath = join(worktreeRoot, suffixedRunId);
-    mkdirSync(join(suffixedWorktreePath, ".gnhf", "runs", suffixedRunId), {
+    mkdirSync(join(suffixedWorktreePath, ".animo", "runs", suffixedRunId), {
       recursive: true,
     });
 
@@ -3359,7 +3359,7 @@ describe("cli", () => {
     const resumeRun = vi.fn(() => ({
       ...stubRunInfo,
       runId: suffixedRunId,
-      runDir: join(suffixedWorktreePath, ".gnhf", "runs", suffixedRunId),
+      runDir: join(suffixedWorktreePath, ".animo", "runs", suffixedRunId),
     }));
 
     try {
@@ -3397,24 +3397,24 @@ describe("cli", () => {
   });
 
   it("uses the persisted commit message convention when resuming a preserved worktree", async () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "gnhf-cli-worktree-resume-"));
+    const tempDir = mkdtempSync(join(tmpdir(), "animo-cli-worktree-resume-"));
     const repoRoot = join(tempDir, "repo");
     const hash = createHash("sha256")
       .update("ship it")
       .digest("hex")
       .slice(0, 6);
     const runId = `ship-it-${hash}`;
-    const branch = `gnhf/${runId}`;
-    const worktreeRoot = join(tempDir, "repo-gnhf-worktrees");
+    const branch = `animo/${runId}`;
+    const worktreeRoot = join(tempDir, "repo-animo-worktrees");
     const worktreePath = join(worktreeRoot, runId);
-    mkdirSync(join(worktreePath, ".gnhf", "runs", runId), {
+    mkdirSync(join(worktreePath, ".animo", "runs", runId), {
       recursive: true,
     });
 
     const resumeRun = vi.fn(() => ({
       ...stubRunInfo,
       runId,
-      runDir: join(worktreePath, ".gnhf", "runs", runId),
+      runDir: join(worktreePath, ".animo", "runs", runId),
       commitMessage: undefined,
     }));
 

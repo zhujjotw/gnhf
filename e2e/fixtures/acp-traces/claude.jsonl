@@ -1,6 +1,6 @@
 {"type":"status","text":"usage updated: 29218/1000000","tag":"usage_update","used":29218,"size":1000000}
 {"type":"tool_call","text":"Read File (pending)","tag":"tool_call","toolCallId":"toolu_01MrhhvFQJHeVXmgr3ghAVjh","status":"pending","title":"Read File"}
-{"type":"tool_call","text":"Read .gnhf/runs/add-a-function-calle-955b7c/notes.md","tag":"tool_call_update","toolCallId":"toolu_01MrhhvFQJHeVXmgr3ghAVjh","title":"Read .gnhf/runs/add-a-function-calle-955b7c/notes.md"}
+{"type":"tool_call","text":"Read .animo/runs/add-a-function-calle-955b7c/notes.md","tag":"tool_call_update","toolCallId":"toolu_01MrhhvFQJHeVXmgr3ghAVjh","title":"Read .animo/runs/add-a-function-calle-955b7c/notes.md"}
 {"type":"tool_call","text":"tool call","tag":"tool_call_update","toolCallId":"toolu_01MrhhvFQJHeVXmgr3ghAVjh","title":"tool call"}
 {"type":"status","text":"usage updated: 29362/1000000","tag":"usage_update","used":29362,"size":1000000}
 {"type":"tool_call","text":"tool call (completed)","tag":"tool_call_update","toolCallId":"toolu_01MrhhvFQJHeVXmgr3ghAVjh","status":"completed","title":"tool call"}

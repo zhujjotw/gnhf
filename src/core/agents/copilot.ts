@@ -113,7 +113,7 @@ function userSpecifiedPermissionMode(userArgs: string[]): boolean {
 function buildCopilotPrompt(prompt: string, schema: AgentOutputSchema): string {
   return `${prompt}
 
-## gnhf final output contract
+## animo final output contract
 
 When the iteration is complete, your final answer must be a single JSON object that matches this JSON Schema:
 

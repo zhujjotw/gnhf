@@ -8,11 +8,22 @@ import {
   type Star,
 } from "./utils/stars.js";
 import { getMoonPhase } from "./utils/moon.js";
+import type { TerminalPet } from "./utils/pet.js";
+import { renderTextAsArt } from "./utils/box-font.js";
 import {
-  renderPetFrame,
-  selectTerminalPet,
-  type TerminalPet,
-} from "./utils/pet.js";
+  type BackgroundTheme,
+  selectBackgroundTheme,
+} from "./utils/bg-theme.js";
+import {
+  generateMarioBackground,
+  renderMarioRow,
+  type MarioState,
+} from "./utils/bg-mario.js";
+import {
+  generateTetrisBackground,
+  renderTetrisRow,
+  type TetrisState,
+} from "./utils/bg-tetris.js";
 import { formatElapsed } from "./utils/time.js";
 import { formatTokens } from "./utils/tokens.js";
 import { wordWrap } from "./utils/wordwrap.js";
@@ -40,9 +51,9 @@ const MOONS_PER_ROW = 30;
 const MOON_PHASE_PERIOD = 1600;
 const MAX_MSG_LINES = 3;
 const MAX_MSG_LINE_LEN = CONTENT_WIDTH;
-const RESUME_HINT = "[ctrl+c to stop, gnhf again to resume]";
+const RESUME_HINT = "[ctrl+c to stop, animo again to resume]";
 const GRACEFUL_STOP_HINT =
-  "[graceful stop requested, ctrl+c again to force stop, gnhf again to resume]";
+  "[graceful stop requested, ctrl+c again to force stop, animo again to resume]";
 const DONE_HINT = "[ctrl+c to exit]";
 const MODERN_QUOTES = [
   {
@@ -85,6 +96,7 @@ export type RendererExitReason = "interrupted" | "stopped";
 
 export interface RendererOptions {
   meteorFrequency?: number;
+  backgroundTheme?: BackgroundTheme;
 }
 
 // ── ANSI helpers ─────────────────────────────────────────────
@@ -120,7 +132,7 @@ function buildTerminalTitle(state: OrchestratorState, now: number): string {
       ? getMoonPhase("active", now, MOON_PHASE_PERIOD)
       : state.status;
   return (
-    `gnhf ${lead}` +
+    `animo ${lead}` +
     ` · ${formatTokenCount(state.totalInputTokens, "in", state.tokensEstimated)}` +
     ` · ${formatTokenCount(state.totalOutputTokens, "out", state.tokensEstimated)}` +
     ` · ${formatCommitCount(state.commitCount)}`
@@ -141,7 +153,7 @@ function restoreTerminalTitle(): string {
 
 function eyebrowSegments(agentName: string): string[] {
   // Render "acp:<target>" as two segments separated by the same dot used
-  // between "gnhf" and the agent name: "g n h f \u00b7 a c p \u00b7 claude".
+  // between "animo" and the agent name: "a n i m o \u00b7 a c p \u00b7 claude".
   if (agentName.startsWith("acp:")) {
     const target = agentName.slice("acp:".length);
     if (target.length > 0) return ["acp", target];
@@ -157,29 +169,14 @@ export function renderTitleCells(agentName?: string): Cell[][] {
     ...textToCells("  ", "normal"),
   ];
   const eyebrow: Cell[] = [
-    ...textToCells(spacedLabel("gnhf"), "dim"),
+    ...textToCells(spacedLabel("animo"), "dim"),
     ...segments.flatMap((segment) => [
       ...separator,
       ...textToCells(spacedLabel(segment), "dim"),
     ]),
   ];
 
-  return [
-    eyebrow,
-    [],
-    textToCells(
-      "┏━╸┏━┓┏━┓╺┳┓   ┏┓╻╻┏━╸╻ ╻╺┳╸   ╻ ╻┏━┓╻ ╻┏━╸   ┏━╸╻ ╻┏┓╻",
-      "bold",
-    ),
-    textToCells(
-      "┃╺┓┃ ┃┃ ┃ ┃┃   ┃┗┫┃┃╺┓┣━┫ ┃    ┣━┫┣━┫┃┏┛┣╸    ┣╸ ┃ ┃┃┗┫",
-      "bold",
-    ),
-    textToCells(
-      "┗━┛┗━┛┗━┛╺┻┛   ╹ ╹╹┗━┛╹ ╹ ╹    ╹ ╹╹ ╹┗┛ ┗━╸   ╹  ┗━┛╹ ╹",
-      "bold",
-    ),
-  ];
+  return [eyebrow, []];
 }
 
 export function renderStatsCells(
@@ -276,13 +273,16 @@ export function selectModernQuote(seed = Math.random()): ModernQuote {
 }
 
 export function renderModernQuoteCells(quote: ModernQuote): Cell[][] {
-  const quoteText = `"${quote.text}"`;
-  return [
-    ...wordWrap(quoteText, CONTENT_WIDTH, 2).map((line) =>
-      textToCells(line, "dim"),
-    ),
-    textToCells(`- ${quote.author}`, "dim"),
-  ];
+  const artLines = renderTextAsArt(quote.text, CONTENT_WIDTH);
+  const rows: Cell[][] = [];
+  for (const [line0, line1, line2] of artLines) {
+    rows.push(textToCells(line0, "bold"));
+    rows.push(textToCells(line1, "bold"));
+    rows.push(textToCells(line2, "bold"));
+  }
+  rows.push([]);
+  rows.push(textToCells(`- ${quote.author}`, "dim"));
+  return rows;
 }
 
 // ── String wrappers (preserve existing API) ──────────────────
@@ -484,9 +484,38 @@ export function renderStarFieldLines(
   return lines;
 }
 
-function renderSideStarsCells(
+
+
+function renderThemedLineCells(
+  theme: BackgroundTheme,
   stars: Star[],
   meteors: Meteor[],
+  mario: MarioState | null,
+  tetris: TetrisState | null,
+  width: number,
+  y: number,
+  now: number,
+  absoluteRow = y,
+): Cell[] {
+  const cells = emptyCells(width);
+  if (theme === "mario" && mario) {
+    renderMarioRow(mario, cells, absoluteRow, 0, width, now);
+  } else if (theme === "tetris" && tetris) {
+    renderTetrisRow(tetris, cells, absoluteRow, 0, width, now);
+  } else {
+    placeAuroraInCells(cells, 0, width, absoluteRow, now);
+    placeStarsInCells(cells, stars, y, 0, width, 0, now);
+    placeMeteorsInCells(cells, meteors, y, 0, width, 0, now);
+  }
+  return cells;
+}
+
+function renderThemedSideCells(
+  theme: BackgroundTheme,
+  stars: Star[],
+  meteors: Meteor[],
+  mario: MarioState | null,
+  tetris: TetrisState | null,
   rowIndex: number,
   xOffset: number,
   sideWidth: number,
@@ -495,25 +524,31 @@ function renderSideStarsCells(
 ): Cell[] {
   if (sideWidth <= 0) return [];
   const cells = emptyCells(sideWidth);
-  placeAuroraInCells(cells, xOffset, sideWidth, absoluteRow, now);
-  placeStarsInCells(
-    cells,
-    stars,
-    rowIndex,
-    xOffset,
-    xOffset + sideWidth,
-    xOffset,
-    now,
-  );
-  placeMeteorsInCells(
-    cells,
-    meteors,
-    rowIndex,
-    xOffset,
-    xOffset + sideWidth,
-    xOffset,
-    now,
-  );
+  if (theme === "mario" && mario) {
+    renderMarioRow(mario, cells, absoluteRow, xOffset, sideWidth, now);
+  } else if (theme === "tetris" && tetris) {
+    renderTetrisRow(tetris, cells, absoluteRow, xOffset, sideWidth, now);
+  } else {
+    placeAuroraInCells(cells, xOffset, sideWidth, absoluteRow, now);
+    placeStarsInCells(
+      cells,
+      stars,
+      rowIndex,
+      xOffset,
+      xOffset + sideWidth,
+      xOffset,
+      now,
+    );
+    placeMeteorsInCells(
+      cells,
+      meteors,
+      rowIndex,
+      xOffset,
+      xOffset + sideWidth,
+      xOffset,
+      now,
+    );
+  }
   return cells;
 }
 
@@ -561,45 +596,6 @@ function renderResumeHintCells(
   return centerLineCells(textToCells(hint, "dim"), width);
 }
 
-function overlayPetInFrame(
-  frame: Cell[][],
-  pet: TerminalPet | undefined,
-  elapsedMs: number,
-  terminalWidth: number,
-  availableHeight: number,
-): void {
-  if (!pet || availableHeight <= 0) return;
-
-  const sideWidth = Math.max(
-    0,
-    Math.floor((terminalWidth - CONTENT_WIDTH) / 2),
-  );
-  const rightSideWidth = Math.max(0, terminalWidth - sideWidth - CONTENT_WIDTH);
-  const centerEnd =
-    Math.floor((terminalWidth - CONTENT_WIDTH) / 2) + CONTENT_WIDTH;
-  const petLines = renderPetFrame(pet, elapsedMs);
-  const petWidth = Math.max(...petLines.map((line) => line.length));
-  const petHeight = petLines.length;
-
-  if (sideWidth < petWidth + 2 || availableHeight < petHeight + 4) return;
-
-  const startCol = terminalWidth - petWidth - 1;
-  if (startCol < centerEnd) return;
-
-  const startRow = Math.max(0, availableHeight - petHeight - 1);
-  for (let y = 0; y < petHeight; y++) {
-    const row = frame[startRow + y];
-    if (!row) continue;
-
-    const line = petLines[y]!.padEnd(petWidth, " ");
-    const cells = textToCells(line, "dim");
-    for (let x = 0; x < cells.length; x++) {
-      const col = startCol + x;
-      if (col < centerEnd || col >= terminalWidth) continue;
-      row[col] = cells[x]!;
-    }
-  }
-}
 
 // ── Build full frame (cell-based) ────────────────────────────
 
@@ -671,9 +667,8 @@ export function buildContentCells(
   ];
 
   const optionalSections: Array<keyof typeof sections> = [
-    "art",
-    "eyebrow",
     "quote",
+    "eyebrow",
     "agent",
     "prompt",
   ];
@@ -724,7 +719,10 @@ export function buildFrameCells(
   bottomMeteors: Meteor[] = [],
   sideMeteors: Meteor[] = [],
   quote: ModernQuote = selectModernQuote(0),
-  pet?: TerminalPet,
+  _pet?: TerminalPet,
+  bgTheme: BackgroundTheme = "stars",
+  marioState: MarioState | null = null,
+  tetrisState: TetrisState | null = null,
 ): Cell[][] {
   const elapsedMs = now - state.startTime.getTime();
   const elapsed = formatElapsed(elapsedMs);
@@ -775,9 +773,12 @@ export function buildFrameCells(
 
   for (let y = 0; y < topHeight; y++) {
     frame.push(
-      renderStarLineCells(
+      renderThemedLineCells(
+        bgTheme,
         topStars,
         visibleTopMeteors,
+        marioState,
+        tetrisState,
         terminalWidth,
         y,
         now,
@@ -787,9 +788,12 @@ export function buildFrameCells(
   }
 
   for (let i = 0; i < contentRows.length; i++) {
-    const left = renderSideStarsCells(
+    const left = renderThemedSideCells(
+      bgTheme,
       sideStars,
       visibleSideMeteors,
+      marioState,
+      tetrisState,
       i,
       0,
       sideWidth,
@@ -797,9 +801,12 @@ export function buildFrameCells(
       topHeight + i,
     );
     const center = centerLineCells(contentRows[i], CONTENT_WIDTH);
-    const right = renderSideStarsCells(
+    const right = renderThemedSideCells(
+      bgTheme,
       sideStars,
       visibleSideMeteors,
+      marioState,
+      tetrisState,
       i,
       terminalWidth - rightSideWidth,
       rightSideWidth,
@@ -811,9 +818,12 @@ export function buildFrameCells(
 
   for (let y = 0; y < bottomHeight; y++) {
     frame.push(
-      renderStarLineCells(
+      renderThemedLineCells(
+        bgTheme,
         bottomStars,
         visibleBottomMeteors,
+        marioState,
+        tetrisState,
         terminalWidth,
         y,
         now,
@@ -824,7 +834,6 @@ export function buildFrameCells(
 
   frame.push(renderResumeHintCells(terminalWidth, state.interruptHint));
   frame.push(emptyCells(terminalWidth));
-  overlayPetInFrame(frame, pet, elapsedMs, terminalWidth, availableHeight);
 
   return frame;
 }
@@ -888,7 +897,9 @@ export class Renderer {
   private cachedHeight = 0;
   private meteorFrequency: number;
   private quote: ModernQuote;
-  private pet: TerminalPet;
+  private bgTheme: BackgroundTheme;
+  private marioState: MarioState | null = null;
+  private tetrisState: TetrisState | null = null;
   private prevCells: Cell[][] = [];
   private prevTitle: string | null = null;
   private titleSaved = false;
@@ -921,7 +932,7 @@ export class Renderer {
       Math.floor(options.meteorFrequency ?? DEFAULT_METEOR_FREQUENCY),
     );
     this.quote = selectModernQuote();
-    this.pet = selectTerminalPet();
+    this.bgTheme = options.backgroundTheme ?? selectBackgroundTheme();
     this.state = orchestrator.getState();
     this.seedTop = Math.floor(Math.random() * 2147483646) + 1;
     this.seedBottom = Math.floor(Math.random() * 2147483646) + 1;
@@ -966,7 +977,7 @@ export class Renderer {
       // Clear the custom title first, then attempt the xterm stack restore.
       // Many modern terminals (iTerm2, macOS Terminal, Alacritty, Ghostty)
       // ignore the title save/restore stack, so without the explicit clear
-      // our "gnhf · ..." title would persist after exit.
+      // our "animo · ..." title would persist after exit.
       process.stdout.write(emitTerminalTitle("") + restoreTerminalTitle());
       this.titleSaved = false;
       this.prevTitle = null;
@@ -1030,6 +1041,19 @@ export class Renderer {
         bottomHeight > 0 ? meteorCountForFrequency(this.meteorFrequency) : 0,
         this.seedBottom + METEOR_SEED_OFFSET,
       );
+      if (this.bgTheme === "mario") {
+        this.marioState = generateMarioBackground(
+          w,
+          availableHeight,
+          this.seedTop,
+        );
+      } else if (this.bgTheme === "tetris") {
+        this.tetrisState = generateTetrisBackground(
+          w,
+          availableHeight,
+          this.seedTop,
+        );
+      }
       return true;
     }
     return false;
@@ -1057,7 +1081,10 @@ export class Renderer {
       this.bottomMeteors,
       this.sideMeteors,
       this.quote,
-      this.pet,
+      undefined,
+      this.bgTheme,
+      this.marioState,
+      this.tetrisState,
     );
 
     if (this.isFirstFrame || resized) {

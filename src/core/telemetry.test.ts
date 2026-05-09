@@ -61,9 +61,9 @@ function createFetchSpy(options: { delayMs?: number; throws?: Error } = {}): {
 }
 
 describe("resolveTelemetryConfig", () => {
-  it("disables telemetry when GNHF_TELEMETRY=0", () => {
+  it("disables telemetry when ANIMO_TELEMETRY=0", () => {
     const config = resolveTelemetryConfig({
-      env: { GNHF_TELEMETRY: "0" },
+      env: { ANIMO_TELEMETRY: "0" },
       buildHost: "https://build.example",
       buildWebsiteID: "build-id",
     });
@@ -71,10 +71,10 @@ describe("resolveTelemetryConfig", () => {
   });
 
   it.each(["false", "off", "FALSE", "Off"])(
-    "disables telemetry when GNHF_TELEMETRY=%s",
+    "disables telemetry when ANIMO_TELEMETRY=%s",
     (value) => {
       const config = resolveTelemetryConfig({
-        env: { GNHF_TELEMETRY: value },
+        env: { ANIMO_TELEMETRY: value },
         buildHost: "https://build.example",
         buildWebsiteID: "build-id",
       });
@@ -94,8 +94,8 @@ describe("resolveTelemetryConfig", () => {
   it("uses env vars over build-time defaults", () => {
     const config = resolveTelemetryConfig({
       env: {
-        GNHF_UMAMI_HOST: "https://env.example",
-        GNHF_UMAMI_WEBSITE_ID: "env-id",
+        ANIMO_UMAMI_HOST: "https://env.example",
+        ANIMO_UMAMI_WEBSITE_ID: "env-id",
       },
       buildHost: "https://build.example",
       buildWebsiteID: "build-id",
@@ -118,7 +118,7 @@ describe("resolveTelemetryConfig", () => {
 
   it("falls back to the hard-coded host when neither env nor build provide it", () => {
     const config = resolveTelemetryConfig({
-      env: { GNHF_UMAMI_WEBSITE_ID: "env-id" },
+      env: { ANIMO_UMAMI_WEBSITE_ID: "env-id" },
       buildHost: "",
       buildWebsiteID: "",
     });
@@ -129,8 +129,8 @@ describe("resolveTelemetryConfig", () => {
   it("trims whitespace around env values", () => {
     const config = resolveTelemetryConfig({
       env: {
-        GNHF_UMAMI_HOST: "  https://env.example  ",
-        GNHF_UMAMI_WEBSITE_ID: "  env-id  ",
+        ANIMO_UMAMI_HOST: "  https://env.example  ",
+        ANIMO_UMAMI_WEBSITE_ID: "  env-id  ",
       },
       buildHost: "",
       buildWebsiteID: "",
@@ -153,7 +153,7 @@ describe("TelemetryClient", () => {
       enabled: true,
       host: "https://a.example.com",
       websiteID: "site-1",
-      app: "gnhf",
+      app: "animo",
       version: "1.2.3",
       platform: "darwin",
       arch: "arm64",
@@ -168,7 +168,7 @@ describe("TelemetryClient", () => {
     expect(req.url).toBe("https://a.example.com/api/send");
     expect(req.method).toBe("POST");
     expect(req.headers["Content-Type"]).toBe("application/json");
-    expect(req.headers["User-Agent"]).toMatch(/^gnhf\/1\.2\.3 telemetry$/);
+    expect(req.headers["User-Agent"]).toMatch(/^animo\/1\.2\.3 telemetry$/);
 
     const body = req.body as {
       type: string;
@@ -186,7 +186,7 @@ describe("TelemetryClient", () => {
     expect(body.payload.website).toBe("site-1");
     expect(body.payload.hostname).toBe("cli");
     expect(body.payload.name).toBe("run");
-    expect(body.payload.url).toBe("app://gnhf/run");
+    expect(body.payload.url).toBe("app://animo/run");
     expect(body.payload.data).toMatchObject({
       agent: "claude",
       status: "success",
@@ -200,7 +200,7 @@ describe("TelemetryClient", () => {
       enabled: true,
       host: "https://a.example.com/umami/",
       websiteID: "site-1",
-      app: "gnhf",
+      app: "animo",
       version: "1.0.0",
       fetch,
     });
@@ -217,7 +217,7 @@ describe("TelemetryClient", () => {
       enabled: true,
       host: "https://a.example.com/api/send",
       websiteID: "site-1",
-      app: "gnhf",
+      app: "animo",
       version: "1.0.0",
       fetch,
     });
@@ -234,7 +234,7 @@ describe("TelemetryClient", () => {
       enabled: true,
       host: "https://a.example.com",
       websiteID: "site-1",
-      app: "gnhf",
+      app: "animo",
       version: "1.0.0",
       fetch,
     });
@@ -255,7 +255,7 @@ describe("TelemetryClient", () => {
       enabled: false,
       host: "https://a.example.com",
       websiteID: "site-1",
-      app: "gnhf",
+      app: "animo",
       version: "1.0.0",
       fetch,
     });
@@ -274,7 +274,7 @@ describe("TelemetryClient", () => {
       enabled: true,
       host: "https://a.example.com",
       websiteID: "site-1",
-      app: "gnhf",
+      app: "animo",
       version: "1.0.0",
       fetch,
     });
@@ -289,7 +289,7 @@ describe("TelemetryClient", () => {
       enabled: true,
       host: "https://a.example.com",
       websiteID: "site-1",
-      app: "gnhf",
+      app: "animo",
       version: "1.0.0",
       fetch,
     });
@@ -307,7 +307,7 @@ describe("TelemetryClient", () => {
       enabled: true,
       host: "https://a.example.com",
       websiteID: "site-1",
-      app: "gnhf",
+      app: "animo",
       version: "1.0.0",
       fetch,
     });

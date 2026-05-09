@@ -59,7 +59,7 @@ class TempCleanup {
   private dirs: string[] = [];
 
   mkdir(prefix: string): string {
-    const dir = mkdtempSync(join(tmpdir(), `gnhf-e2e-cli-${prefix}-`));
+    const dir = mkdtempSync(join(tmpdir(), `animo-e2e-cli-${prefix}-`));
     this.dirs.push(dir);
     return dir;
   }
@@ -83,7 +83,7 @@ class TempCleanup {
 function createRepo(temp: TempCleanup): string {
   const cwd = temp.mkdir("repo");
   git(["init", "-b", "main"], cwd);
-  git(["config", "user.name", "gnhf tests"], cwd);
+  git(["config", "user.name", "animo tests"], cwd);
   git(["config", "user.email", "tests@example.com"], cwd);
   writeFileSync(join(cwd, "README.md"), "# fixture\n", "utf-8");
   git(["add", "README.md"], cwd);
@@ -96,8 +96,8 @@ function createHomeWithConfig(
   configYaml: string,
 ): NodeJS.ProcessEnv {
   const home = temp.mkdir("home");
-  mkdirSync(join(home, ".gnhf"), { recursive: true });
-  writeFileSync(join(home, ".gnhf", "config.yml"), configYaml, "utf-8");
+  mkdirSync(join(home, ".animo"), { recursive: true });
+  writeFileSync(join(home, ".animo", "config.yml"), configYaml, "utf-8");
   return { ...process.env, HOME: home, USERPROFILE: home };
 }
 
@@ -106,8 +106,8 @@ function createMockOpencodeEnv(
   configYaml: string,
 ): { env: NodeJS.ProcessEnv; mockLogPath: string } {
   const home = temp.mkdir("home");
-  mkdirSync(join(home, ".gnhf"), { recursive: true });
-  writeFileSync(join(home, ".gnhf", "config.yml"), configYaml, "utf-8");
+  mkdirSync(join(home, ".animo"), { recursive: true });
+  writeFileSync(join(home, ".animo", "config.yml"), configYaml, "utf-8");
   const logDir = temp.mkdir("logs");
   const mockLogPath = join(logDir, "mock-opencode.jsonl");
   return {
@@ -116,7 +116,7 @@ function createMockOpencodeEnv(
       HOME: home,
       USERPROFILE: home,
       PATH: `${fixtureBinDir}${process.platform === "win32" ? ";" : ":"}${process.env.PATH ?? ""}`,
-      GNHF_MOCK_OPENCODE_LOG_PATH: mockLogPath,
+      ANIMO_MOCK_OPENCODE_LOG_PATH: mockLogPath,
     },
     mockLogPath,
   };
@@ -131,7 +131,7 @@ async function withTemp<T>(fn: (temp: TempCleanup) => Promise<T>): Promise<T> {
   }
 }
 
-describe.concurrent("gnhf e2e cli", () => {
+describe.concurrent("animo e2e cli", () => {
   it("prints the package version for -V", async () => {
     await withTemp(async (temp) => {
       const cwd = temp.mkdir("version");
@@ -151,15 +151,15 @@ describe.concurrent("gnhf e2e cli", () => {
 
       expect(result.code).not.toBe(0);
       expect(result.stderr).toContain(
-        'gnhf: This command must be run inside a Git repository. Change into a repo or run "git init" first.',
+        'animo: This command must be run inside a Git repository. Change into a repo or run "git init" first.',
       );
     });
   }, 15_000);
 
-  it("exits with error when --worktree is used from a gnhf branch", async () => {
+  it("exits with error when --worktree is used from a animo branch", async () => {
     await withTemp(async (temp) => {
       const cwd = createRepo(temp);
-      git(["checkout", "-b", "gnhf/existing-run"], cwd);
+      git(["checkout", "-b", "animo/existing-run"], cwd);
 
       const result = await runCli(cwd, [
         "new objective",
@@ -170,7 +170,7 @@ describe.concurrent("gnhf e2e cli", () => {
 
       expect(result.code).not.toBe(0);
       expect(result.stderr).toContain(
-        "Cannot use --worktree from a gnhf branch",
+        "Cannot use --worktree from a animo branch",
       );
     });
   }, 15_000);
@@ -197,7 +197,7 @@ describe.concurrent("gnhf e2e cli", () => {
   }, 30_000);
 
   it.each([
-    ["preset: gnhf", "commitMessage:\n  preset: gnhf\n"],
+    ["preset: animo", "commitMessage:\n  preset: animo\n"],
     ["preset: angular", "commitMessage:\n  preset: angular\n"],
     ["preset: semantic", "commitMessage:\n  preset: semantic\n"],
     ["empty object", "commitMessage: {}\n"],
@@ -292,19 +292,19 @@ describe.concurrent("gnhf e2e cli", () => {
       expected: "Invalid config value for agentArgsOverride.codex[0]",
     },
     {
-      label: "agentArgsOverride.codex: gnhf-managed flag",
+      label: "agentArgsOverride.codex: animo-managed flag",
       yaml: "agentArgsOverride:\n  codex:\n    - --output-schema=custom.json\n",
-      expected: "managed by gnhf",
+      expected: "managed by animo",
     },
     {
-      label: "agentArgsOverride.rovodev: gnhf-managed flag",
+      label: "agentArgsOverride.rovodev: animo-managed flag",
       yaml: "agentArgsOverride:\n  rovodev:\n    - serve\n",
-      expected: "managed by gnhf",
+      expected: "managed by animo",
     },
     {
-      label: "agentArgsOverride.copilot: gnhf-managed flag",
+      label: "agentArgsOverride.copilot: animo-managed flag",
       yaml: "agentArgsOverride:\n  copilot:\n    - --output-format=json\n",
-      expected: "managed by gnhf",
+      expected: "managed by animo",
     },
   ])(
     "rejects invalid config: $label",

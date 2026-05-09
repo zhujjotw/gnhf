@@ -6,7 +6,7 @@ vi.mock("./git.js", async (importOriginal) => {
     ...actual,
     commitAll: vi.fn(),
     getBranchCommitCount: vi.fn(() => 0),
-    getCurrentBranch: vi.fn(() => "gnhf/run-abc"),
+    getCurrentBranch: vi.fn(() => "animo/run-abc"),
     getHeadCommit: vi.fn(() => "head123"),
     pushCurrentBranch: vi.fn(),
     resetHard: vi.fn(),
@@ -70,16 +70,16 @@ const config: Config = {
 
 const runInfo: RunInfo = {
   runId: "run-abc",
-  runDir: "/repo/.gnhf/runs/run-abc",
-  promptPath: "/repo/.gnhf/runs/run-abc/prompt.md",
-  notesPath: "/repo/.gnhf/runs/run-abc/notes.md",
-  schemaPath: "/repo/.gnhf/runs/run-abc/output-schema.json",
-  logPath: "/repo/.gnhf/runs/run-abc/gnhf.log",
+  runDir: "/repo/.animo/runs/run-abc",
+  promptPath: "/repo/.animo/runs/run-abc/prompt.md",
+  notesPath: "/repo/.animo/runs/run-abc/notes.md",
+  schemaPath: "/repo/.animo/runs/run-abc/output-schema.json",
+  logPath: "/repo/.animo/runs/run-abc/animo.log",
   baseCommit: "base123",
-  baseCommitPath: "/repo/.gnhf/runs/run-abc/base-commit",
-  stopWhenPath: "/repo/.gnhf/runs/run-abc/stop-when",
+  baseCommitPath: "/repo/.animo/runs/run-abc/base-commit",
+  stopWhenPath: "/repo/.animo/runs/run-abc/stop-when",
   stopWhen: undefined,
-  commitMessagePath: "/repo/.gnhf/runs/run-abc/commit-message",
+  commitMessagePath: "/repo/.animo/runs/run-abc/commit-message",
   commitMessage: undefined,
 };
 
@@ -179,7 +179,7 @@ describe("Orchestrator output normalization", () => {
       ["learning"],
     );
     expect(mockCommitAll).toHaveBeenCalledTimes(1);
-    expect(mockCommitAll).toHaveBeenCalledWith("gnhf 1: done", "/repo");
+    expect(mockCommitAll).toHaveBeenCalledWith("animo 1: done", "/repo");
     expect(orchestrator.getState().status).toBe("aborted");
   });
 
@@ -1138,7 +1138,7 @@ describe("Orchestrator stop limits", () => {
         .mockResolvedValueOnce(createSuccessResult("needs hook repair"))
         .mockRejectedValueOnce(
           new PermanentAgentError(
-            "claude credit balance too low - see gnhf.log",
+            "claude credit balance too low - see animo.log",
             "claude exited with code 1: Credit balance is too low",
           ),
         ),
@@ -1280,7 +1280,7 @@ describe("Orchestrator backoff behavior", () => {
       name: "claude",
       run: vi.fn(async () => {
         throw new PermanentAgentError(
-          "claude credit balance too low - see gnhf.log",
+          "claude credit balance too low - see animo.log",
           "claude exited with code 1: Credit balance is too low",
         );
       }),
@@ -1303,12 +1303,12 @@ describe("Orchestrator backoff behavior", () => {
     expect(mockAppendNotes).not.toHaveBeenCalled();
     expect(mockResetHard).toHaveBeenCalledTimes(1);
     expect(abort).toHaveBeenCalledWith(
-      "claude credit balance too low - see gnhf.log",
+      "claude credit balance too low - see animo.log",
     );
     expect(orchestrator.getState()).toMatchObject({
       status: "aborted",
       consecutiveErrors: 0,
-      lastMessage: "claude credit balance too low - see gnhf.log",
+      lastMessage: "claude credit balance too low - see animo.log",
       lastAgentError: "claude exited with code 1: Credit balance is too low",
     });
   });

@@ -9,7 +9,7 @@ import process from "node:process";
 import { setTimeout } from "node:timers";
 
 function appendLog(event, details = {}) {
-  const logPath = process.env.GNHF_MOCK_OPENCODE_LOG_PATH;
+  const logPath = process.env.ANIMO_MOCK_OPENCODE_LOG_PATH;
   if (!logPath) return;
   appendFileSync(
     logPath,
@@ -161,7 +161,7 @@ function applyWorkspaceChange(sessionId) {
   const session = sessions.get(sessionId);
   if (!session?.directory) return;
 
-  if (process.env.GNHF_MOCK_OPENCODE_PRECOMMIT_REPAIR === "1") {
+  if (process.env.ANIMO_MOCK_OPENCODE_PRECOMMIT_REPAIR === "1") {
     const readmePath = join(session.directory, "README.md");
     const current = readFileSync(readmePath, "utf-8");
     if (session.lastPrompt?.includes("pre-commit hook failed")) {
@@ -275,7 +275,7 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    if (process.env.GNHF_MOCK_OPENCODE_OVERLOAD === "1") {
+    if (process.env.ANIMO_MOCK_OPENCODE_OVERLOAD === "1") {
       emitOverloadError(sessionId);
       res.writeHead(204);
       res.end();

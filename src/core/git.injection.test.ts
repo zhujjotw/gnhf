@@ -18,9 +18,9 @@ function rawGit(args: string[], cwd: string): string {
 }
 
 function makeRepo(): string {
-  const cwd = mkdtempSync(join(tmpdir(), "gnhf-injection-"));
+  const cwd = mkdtempSync(join(tmpdir(), "animo-injection-"));
   rawGit(["init", "-b", "main"], cwd);
-  rawGit(["config", "user.name", "gnhf tests"], cwd);
+  rawGit(["config", "user.name", "animo tests"], cwd);
   rawGit(["config", "user.email", "tests@example.com"], cwd);
   writeFileSync(join(cwd, "seed.txt"), "seed\n", "utf-8");
   rawGit(["add", "seed.txt"], cwd);
@@ -30,7 +30,7 @@ function makeRepo(): string {
 
 describe("git shell injection regression", () => {
   const repos: string[] = [];
-  const markerName = `gnhf-injection-marker-${process.pid}`;
+  const markerName = `animo-injection-marker-${process.pid}`;
   const marker = join(tmpdir(), markerName);
 
   afterEach(() => {
