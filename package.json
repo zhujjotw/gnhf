@@ -48,7 +48,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/kunchenguid/animo"
+    "url": "https://github.com/zhujjotw/animo"
   },
   "engines": {
     "node": ">=20"
